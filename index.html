@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Server Refresh & VM Migration Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-base: #080D1A;
+  --bg-surface: #0F1629;
+  --bg-elevated: #162040;
+  --bg-card: #1A2540;
+  --bg-input: #0D1830;
+  --border-subtle: rgba(59,130,246,0.12);
+  --border-default: rgba(59,130,246,0.2);
+  --border-active: rgba(59,130,246,0.5);
+  --text-primary: #F0F4FF;
+  --text-secondary: #8B9EC7;
+  --text-muted: #4A5980;
+  --text-code: #7DD3FC;
+  --accent-blue: #3B82F6;
+  --accent-blue-bright: #60A5FA;
+  --accent-teal: #06B6D4;
+  --accent-green: #10B981;
+  --accent-amber: #F59E0B;
+  --accent-red: #EF4444;
+  --accent-purple: #8B5CF6;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --font-ui: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  --shadow-card: 0 4px 24px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.3);
+  --shadow-glow-green: 0 0 24px rgba(16,185,129,0.12);
+  --shadow-glow-amber: 0 0 24px rgba(245,158,11,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--font-ui);background:var(--bg-base);color:var(--text-primary);min-height:100vh;line-height:1.6;}
+
+/* Header */
+.app-header{background:linear-gradient(135deg,#0F1629 0%,#162040 100%);border-bottom:1px solid var(--border-default);padding:16px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;backdrop-filter:blur(10px);}
+.logo-wrap{display:flex;align-items:center;gap:12px;}
+.logo-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--accent-blue),var(--accent-teal));border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.app-title{font-size:17px;font-weight:700;letter-spacing:-0.02em;}
+.app-sub{font-size:11px;color:var(--text-muted);font-family:var(--font-mono);letter-spacing:0.05em;text-transform:uppercase;}
+.header-badge{background:rgba(59,130,246,0.1);border:1px solid var(--border-default);color:var(--accent-blue-bright);padding:4px 12px;border-radius:100px;font-size:11px;font-weight:600;font-family:var(--font-mono);}
+
+/* Layout */
+.main{max-width:1440px;margin:0 auto;padding:32px;display:grid;grid-template-columns:1fr 380px;gap:24px;}
+.left-col,.right-col{display:flex;flex-direction:column;gap:24px;}
+
+/* Card */
+.card{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);box-shadow:var(--shadow-card);overflow:hidden;}
+.card-header{padding:18px 24px;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.02);}
+.card-title-wrap{display:flex;align-items:center;gap:12px;}
+.card-icon{width:32px;height:32px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.ci-blue{background:rgba(59,130,246,0.15);}
+.ci-teal{background:rgba(6,182,212,0.15);}
+.ci-green{background:rgba(16,185,129,0.15);}
+.ci-amber{background:rgba(245,158,11,0.15);}
+.ci-purple{background:rgba(139,92,246,0.15);}
+.card-title{font-size:14px;font-weight:700;}
+.card-desc{font-size:11px;color:var(--text-muted);margin-top:1px;}
+.card-body{padding:24px;}
+
+/* VM Groups */
+.vm-groups{display:flex;flex-direction:column;gap:12px;}
+.vm-group{background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden;transition:border-color 0.2s;}
+.vm-group:focus-within{border-color:var(--border-active);box-shadow:0 0 0 3px rgba(59,130,246,0.08);}
+.vm-group-head{padding:10px 16px;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;}
+.vm-name-input{background:transparent;border:none;color:var(--text-primary);font-family:var(--font-ui);font-size:13px;font-weight:700;outline:none;flex:1;}
+.vm-name-input::placeholder{color:var(--text-muted);}
+.vm-group-body{padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;align-items:end;}
+
+/* Form */
+.fg{display:flex;flex-direction:column;gap:5px;}
+.fg.span2{grid-column:span 2;}
+.fl{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;}
+.fi,.fs{background:var(--bg-input);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);color:var(--text-primary);font-family:var(--font-mono);font-size:13px;padding:7px 10px;width:100%;transition:border-color 0.2s,box-shadow 0.2s;outline:none;appearance:none;}
+.fi:focus,.fs:focus{border-color:var(--border-active);box-shadow:0 0 0 3px rgba(59,130,246,0.1);}
+.fi::placeholder{color:var(--text-muted);}
+.fs{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234A5980' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer;}
+.fs option{background:var(--bg-surface);color:var(--text-primary);}
+.iw{position:relative;}
+.iw .fi{padding-right:36px;}
+.iu{position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--text-muted);font-family:var(--font-mono);pointer-events:none;}
+
+/* Toggle */
+.tg-wrap{display:flex;align-items:center;gap:8px;height:34px;}
+.tg-in{position:absolute;opacity:0;width:0;height:0;}
+.tg-track{width:34px;height:19px;background:var(--bg-input);border:1px solid var(--border-subtle);border-radius:100px;position:relative;cursor:pointer;transition:background 0.2s,border-color 0.2s;flex-shrink:0;}
+.tg-in:checked+.tg-track{background:rgba(59,130,246,0.3);border-color:var(--accent-blue);}
+.tg-in:focus+.tg-track{box-shadow:0 0 0 3px rgba(59,130,246,0.2);}
+.tg-track::after{content:'';position:absolute;width:13px;height:13px;background:var(--text-muted);border-radius:50%;top:2px;left:2px;transition:transform 0.2s,background 0.2s;}
+.tg-in:checked+.tg-track::after{transform:translateX(15px);background:var(--accent-blue-bright);}
+.tg-text{font-size:12px;color:var(--text-secondary);}
+.sql-badge{font-size:9px;font-weight:800;font-family:var(--font-mono);background:rgba(139,92,246,0.15);color:#A78BFA;border:1px solid rgba(139,92,246,0.3);padding:2px 6px;border-radius:4px;text-transform:uppercase;margin-left:6px;}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);font-family:var(--font-ui);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s;border:1px solid transparent;outline:none;white-space:nowrap;}
+.btn:focus-visible{box-shadow:0 0 0 3px rgba(59,130,246,0.3);}
+.btn-primary{background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;border-color:rgba(255,255,255,0.1);box-shadow:0 2px 8px rgba(59,130,246,0.3);}
+.btn-primary:hover{background:linear-gradient(135deg,#60A5FA,#3B82F6);box-shadow:0 4px 16px rgba(59,130,246,0.45);transform:translateY(-1px);}
+.btn-primary:active{transform:translateY(0);}
+.btn-secondary{background:rgba(255,255,255,0.05);color:var(--text-secondary);border-color:var(--border-subtle);}
+.btn-secondary:hover{background:rgba(255,255,255,0.09);color:var(--text-primary);border-color:var(--border-default);}
+.btn-danger{background:rgba(239,68,68,0.08);color:#FCA5A5;border-color:rgba(239,68,68,0.2);}
+.btn-danger:hover{background:rgba(239,68,68,0.18);border-color:rgba(239,68,68,0.4);}
+.btn-sm{padding:4px 10px;font-size:11px;}
+.btn-lg{padding:13px 28px;font-size:15px;border-radius:var(--radius-md);}
+
+/* Calc row */
+.calc-row{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;background:rgba(59,130,246,0.04);border:1px solid rgba(59,130,246,0.1);border-radius:var(--radius-lg);}
+.calc-hint{font-size:13px;color:var(--text-muted);}
+
+/* Add VM footer */
+.add-vm-foot{display:flex;align-items:center;gap:12px;padding:14px 20px;border-top:1px solid var(--border-subtle);}
+
+/* Stats grid */
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.stat-card{background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:14px 16px;}
+.stat-lbl{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;}
+.stat-val{font-size:26px;font-weight:700;font-family:var(--font-mono);line-height:1;}
+.stat-unit{font-size:11px;font-weight:500;color:var(--text-muted);margin-left:2px;}
+.stat-sub{font-size:10px;color:var(--text-muted);margin-top:3px;}
+
+/* Util bars */
+.util-section{margin-top:20px;}
+.util-section-lbl{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:12px;}
+.ubar{margin-bottom:10px;}
+.ubar-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;}
+.ubar-name{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;}
+.ubar-pct{font-size:12px;font-family:var(--font-mono);font-weight:600;}
+.ubar-track{height:5px;background:rgba(255,255,255,0.06);border-radius:100px;overflow:hidden;}
+.ubar-fill{height:100%;border-radius:100px;transition:width 0.6s cubic-bezier(0.4,0,0.2,1);}
+.ubar-note{font-size:10px;color:var(--text-muted);margin-top:2px;}
+.u-good .ubar-fill{background:linear-gradient(90deg,#10B981,#34D399);}
+.u-warn .ubar-fill{background:linear-gradient(90deg,#F59E0B,#FCD34D);}
+.u-danger .ubar-fill{background:linear-gradient(90deg,#EF4444,#F87171);}
+.u-good .ubar-pct{color:#34D399;}
+.u-warn .ubar-pct{color:#FCD34D;}
+.u-danger .ubar-pct{color:#F87171;}
+
+/* VM table */
+.vm-table{width:100%;border-collapse:collapse;font-size:12px;}
+.vm-table th{text-align:left;padding:9px 18px;color:var(--text-muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;border-bottom:1px solid var(--border-subtle);background:rgba(255,255,255,0.025);}
+.vm-table th.r{text-align:right;}
+.vm-table td{padding:9px 18px;border-bottom:1px solid var(--border-subtle);color:var(--text-secondary);}
+.vm-table td.r{text-align:right;font-family:var(--font-mono);}
+.vm-table td.mono{font-family:var(--font-mono);}
+.vm-table tr:last-child td{border-bottom:none;}
+.vm-table tr:nth-child(even) td{background:rgba(255,255,255,0.015);}
+.vm-table td strong{color:var(--text-primary);}
+
+/* Rec cards */
+.rec-card{border-radius:var(--radius-lg);overflow:hidden;border:1px solid;background:var(--bg-card);}
+.rec-card.optimal{border-color:rgba(16,185,129,0.25);box-shadow:var(--shadow-glow-green),var(--shadow-card);}
+.rec-card.adequate{border-color:rgba(245,158,11,0.25);box-shadow:var(--shadow-glow-amber),var(--shadow-card);}
+.rec-head{padding:14px 20px;display:flex;align-items:center;gap:12px;}
+.rec-card.optimal .rec-head{background:rgba(16,185,129,0.07);border-bottom:1px solid rgba(16,185,129,0.14);}
+.rec-card.adequate .rec-head{background:rgba(245,158,11,0.07);border-bottom:1px solid rgba(245,158,11,0.14);}
+.rec-badge{font-size:10px;font-weight:800;font-family:var(--font-mono);padding:3px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:0.08em;}
+.rb-opt{background:rgba(16,185,129,0.15);color:#34D399;border:1px solid rgba(16,185,129,0.3);}
+.rb-fit{background:rgba(245,158,11,0.15);color:#FBD47B;border:1px solid rgba(245,158,11,0.3);}
+.rec-title{font-size:14px;font-weight:700;}
+.rec-sub{font-size:11px;color:var(--text-muted);}
+.rec-body{padding:18px 20px;display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.spec-box{background:var(--bg-elevated);border-radius:var(--radius-sm);padding:10px 14px;}
+.spec-lbl{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px;}
+.spec-val{font-size:17px;font-weight:700;font-family:var(--font-mono);}
+.sv-green{color:#34D399;}
+.sv-amber{color:#FCD34D;}
+.spec-note{font-size:10px;color:var(--text-muted);margin-top:2px;}
+.rec-foot{padding:12px 20px;border-top:1px solid var(--border-subtle);}
+.rec-card.optimal .rec-foot{background:rgba(16,185,129,0.03);}
+.rec-card.adequate .rec-foot{background:rgba(245,158,11,0.03);}
+.rec-notes-lbl{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:7px;}
+.rec-notes li{list-style:none;padding-left:16px;position:relative;font-size:12px;color:var(--text-secondary);margin-bottom:4px;line-height:1.5;}
+.rec-notes li::before{content:'→';position:absolute;left:0;color:var(--text-muted);}
+
+/* Licensing */
+.lic-wrap{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);overflow:hidden;}
+.lic-head{padding:14px 20px;background:rgba(139,92,246,0.06);border-bottom:1px solid rgba(139,92,246,0.15);display:flex;align-items:center;gap:10px;}
+.lic-title{font-size:14px;font-weight:700;}
+.lic-body{padding:18px 20px;display:flex;flex-direction:column;gap:14px;}
+.lic-item{background:var(--bg-elevated);border-radius:var(--radius-md);padding:14px 16px;border-left:3px solid;}
+.lic-item.win{border-color:var(--accent-blue);}
+.lic-item.sql{border-color:var(--accent-purple);}
+.lic-item-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:7px;}
+.ed-badge{font-size:10px;font-weight:700;font-family:var(--font-mono);padding:2px 7px;border-radius:4px;text-transform:uppercase;}
+.eb-dc{background:rgba(59,130,246,0.15);color:var(--accent-blue-bright);border:1px solid rgba(59,130,246,0.25);}
+.eb-std{background:rgba(16,185,129,0.15);color:#34D399;border:1px solid rgba(16,185,129,0.25);}
+.eb-ent{background:rgba(139,92,246,0.15);color:#A78BFA;border:1px solid rgba(139,92,246,0.25);}
+.lic-detail{font-size:12px;color:var(--text-secondary);line-height:1.7;}
+.lic-detail strong{color:var(--text-primary);font-weight:600;}
+.lic-note{font-size:11px;color:var(--text-muted);margin-top:8px;padding:7px 10px;background:rgba(255,255,255,0.025);border-radius:var(--radius-sm);line-height:1.6;}
+
+/* Alert */
+.alert{padding:10px 14px;border-radius:var(--radius-sm);font-size:12px;line-height:1.6;}
+.alert-info{background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);color:var(--accent-blue-bright);}
+.alert-warn{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#FCD34D;}
+
+/* Ref sidebar */
+.ref-block{display:flex;flex-direction:column;gap:12px;font-size:12px;color:var(--text-secondary);}
+.ref-section-lbl{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:7px;}
+.ref-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--border-subtle);}
+.ref-row:last-child{border-bottom:none;}
+.ref-mono{font-family:var(--font-mono);font-weight:600;}
+.ref-green{color:#34D399;}
+.ref-amber{color:#FCD34D;}
+.ref-red{color:#F87171;}
+.ref-muted{color:var(--text-muted);}
+.ref-box{background:var(--bg-elevated);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:4px;}
+.ref-box-title{font-weight:700;margin-bottom:4px;}
+
+/* Results hidden by default */
+#results{display:none;flex-direction:column;gap:24px;}
+
+/* Calculation Log */
+.log-wrap{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);overflow:hidden;}
+.log-head{padding:14px 20px;background:rgba(6,182,212,0.06);border-bottom:1px solid rgba(6,182,212,0.15);display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.log-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.log-count{font-size:10px;font-family:var(--font-mono);background:rgba(6,182,212,0.15);color:var(--accent-teal);border:1px solid rgba(6,182,212,0.25);padding:2px 7px;border-radius:100px;}
+.log-empty{padding:28px 20px;text-align:center;color:var(--text-muted);font-size:12px;}
+.log-list{display:flex;flex-direction:column;}
+.log-entry{border-bottom:1px solid var(--border-subtle);cursor:pointer;transition:background 0.15s;}
+.log-entry:last-child{border-bottom:none;}
+.log-entry:hover{background:rgba(255,255,255,0.025);}
+.log-entry-head{padding:9px 16px 6px;display:flex;flex-direction:column;gap:4px;}
+.log-entry-row1{display:flex;align-items:center;gap:7px;}
+.log-entry-row2{display:flex;align-items:center;gap:5px;}
+.log-num{font-size:10px;font-weight:700;font-family:var(--font-mono);color:var(--text-muted);background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;flex-shrink:0;}
+.log-ts{font-size:11px;font-family:var(--font-mono);color:var(--text-muted);flex-shrink:0;}
+.log-hw{font-size:11px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;}
+.log-pills{display:flex;gap:5px;flex-wrap:nowrap;}
+.log-pill{font-size:10px;font-family:var(--font-mono);padding:2px 6px;border-radius:4px;font-weight:600;white-space:nowrap;}
+.lp-blue{background:rgba(59,130,246,0.12);color:var(--accent-blue-bright);}
+.lp-green{background:rgba(16,185,129,0.12);color:#34D399;}
+.lp-amber{background:rgba(245,158,11,0.12);color:#FCD34D;}
+.log-entry-detail{padding:0 16px 12px;display:none;grid-template-columns:1fr 1fr;gap:6px;}
+.log-entry-detail.open{display:grid;}
+.log-detail-box{background:var(--bg-elevated);border-radius:var(--radius-sm);padding:8px 10px;}
+.log-detail-lbl{font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;}
+.log-detail-val{font-size:12px;font-family:var(--font-mono);color:var(--text-primary);font-weight:600;}
+.log-detail-sub{font-size:10px;color:var(--text-muted);margin-top:1px;}
+
+/* Info icon */
+.info-icon{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;background:rgba(59,130,246,0.18);color:var(--accent-blue-bright);font-size:8px;font-weight:800;cursor:help;margin-left:5px;flex-shrink:0;vertical-align:middle;line-height:1;border:1px solid rgba(59,130,246,0.25);transition:background 0.15s;}
+.info-icon:hover{background:rgba(59,130,246,0.35);}
+.spec-lbl{display:flex;align-items:center;}
+
+/* Floating tooltip */
+#tt{position:fixed;z-index:9999;background:#1A2540;color:#8B9EC7;font-size:11px;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-default);max-width:230px;line-height:1.55;pointer-events:none;display:none;box-shadow:0 4px 20px rgba(0,0,0,0.5);font-family:var(--font-ui);}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:100px;}
+
+/* Responsive */
+@media(max-width:1100px){.main{grid-template-columns:1fr;}.right-col{display:grid;grid-template-columns:1fr 1fr;}}
+@media(max-width:700px){.main{padding:16px;}.stats-grid{grid-template-columns:1fr 1fr;}.right-col{display:flex;}}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="logo-wrap">
+    <div class="logo-icon">🖥️</div>
+    <div>
+      <div class="app-title">Server Refresh Calculator</div>
+      <div class="app-sub">VM Migration &amp; Hardware Sizing</div>
+    </div>
+  </div>
+  <div class="header-badge">v1.0 · 2026</div>
+</header>
+
+<div class="main">
+
+  <!-- LEFT COLUMN -->
+  <div class="left-col">
+
+    <!-- VM Workloads -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-wrap">
+          <div class="card-icon ci-blue">⚡</div>
+          <div>
+            <div class="card-title">Virtual Machine Workloads</div>
+            <div class="card-desc">Group VMs by spec — e.g. "Web Servers", "DB Servers", "File Servers"</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body" style="padding-bottom:0;">
+        <div class="vm-groups" id="vm-groups"></div>
+      </div>
+      <div class="add-vm-foot">
+        <button class="btn btn-secondary" onclick="addVMGroup()">+ Add VM Group</button>
+        <span style="font-size:12px;color:var(--text-muted);">Group VMs with similar specs together</span>
+      </div>
+    </div>
+
+    <!-- Current Hardware -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-wrap">
+          <div class="card-icon ci-teal">🔩</div>
+          <div>
+            <div class="card-title">Current Physical Hardware</div>
+            <div class="card-desc">The server(s) currently hosting these workloads</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+          <div class="fg span2">
+            <label class="fl">Server Name / Model</label>
+            <input type="text" class="fi" id="hw-name" placeholder="e.g. Dell PowerEdge R740, HP DL380 Gen10">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;">
+          <div class="fg">
+            <label class="fl">CPU Sockets</label>
+            <input type="number" class="fi" id="hw-sockets" value="2" min="1">
+          </div>
+          <div class="fg">
+            <label class="fl">Cores / Socket</label>
+            <input type="number" class="fi" id="hw-cores" value="16" min="1">
+          </div>
+          <div class="fg">
+            <label class="fl">CPU Speed</label>
+            <div class="iw"><input type="number" class="fi" id="hw-ghz" value="2.4" step="0.1" min="0.1"><span class="iu">GHz</span></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+          <div class="fg">
+            <label class="fl">Total RAM</label>
+            <div class="iw"><input type="number" class="fi" id="hw-ram" value="256" min="1"><span class="iu">GB</span></div>
+          </div>
+          <div class="fg">
+            <label class="fl">Usable Storage</label>
+            <div class="iw"><input type="number" class="fi" id="hw-storage" value="10" step="0.1" min="0.1"><span class="iu">TB</span></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="fg">
+            <label class="fl">Hypervisor</label>
+            <select class="fs" id="hw-hypervisor">
+              <option value="vmware">VMware vSphere / ESXi</option>
+              <option value="hyperv">Microsoft Hyper-V</option>
+              <option value="proxmox">Proxmox VE</option>
+              <option value="nutanix">Nutanix AHV</option>
+              <option value="other">Other / Bare Metal</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label class="fl">Hyperthreading</label>
+            <select class="fs" id="hw-ht">
+              <option value="yes">Enabled (×2 logical CPUs)</option>
+              <option value="no">Disabled</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calculate -->
+    <div class="calc-row">
+      <div class="calc-hint">Enter VM workloads and hardware details above, then calculate.</div>
+      <button class="btn btn-primary btn-lg" onclick="calculate()">⚡ Calculate Refresh Spec</button>
+    </div>
+
+    <!-- Results -->
+    <div id="results">
+
+      <!-- Summary -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <div class="card-icon ci-blue">📊</div>
+            <div>
+              <div class="card-title">Workload Summary</div>
+              <div class="card-desc">Total resources across all defined VM groups</div>
+            </div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="stats-grid" id="stats-grid"></div>
+          <div class="util-section" id="util-bars"></div>
+        </div>
+      </div>
+
+      <!-- VM Table -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <div class="card-icon ci-teal">📋</div>
+            <div><div class="card-title">VM Group Breakdown</div></div>
+          </div>
+        </div>
+        <div style="overflow-x:auto;" id="vm-table-wrap"></div>
+      </div>
+
+      <!-- Recommendations -->
+      <div id="rec-section" style="display:flex;flex-direction:column;gap:16px;"></div>
+
+      <!-- Licensing -->
+      <div id="lic-section"></div>
+
+    </div><!-- /results -->
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div class="right-col">
+
+    <!-- Sizing Guide -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-wrap">
+          <div class="card-icon ci-amber">📐</div>
+          <div>
+            <div class="card-title">Sizing Guidelines</div>
+            <div class="card-desc">Ratios used by this calculator</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body" style="padding:16px 20px;">
+        <div class="ref-block">
+          <div>
+            <div class="ref-section-lbl">CPU vCPU : pCore Overcommit</div>
+            <div class="ref-row"><span>Optimal</span><span class="ref-mono ref-green">4:1 – 6:1</span></div>
+            <div class="ref-row"><span>Fit for Purpose</span><span class="ref-mono ref-amber">6:1 – 10:1</span></div>
+            <div class="ref-row"><span>Not Recommended</span><span class="ref-mono ref-red">&gt;10:1</span></div>
+          </div>
+          <div>
+            <div class="ref-section-lbl">RAM Overcommit</div>
+            <div class="ref-row"><span>Optimal</span><span class="ref-mono ref-green">No overcommit</span></div>
+            <div class="ref-row"><span>Fit for Purpose</span><span class="ref-mono ref-amber">Up to 1.1:1</span></div>
+          </div>
+          <div>
+            <div class="ref-section-lbl">Storage Overhead</div>
+            <div class="ref-row"><span>Snapshots + Growth</span><span class="ref-mono ref-green">+30% optimal</span></div>
+            <div class="ref-row"><span>Minimum Buffer</span><span class="ref-mono ref-amber">+15% minimum</span></div>
+          </div>
+          <div>
+            <div class="ref-section-lbl">Hypervisor Tax (per host)</div>
+            <div class="ref-row"><span>CPU overhead</span><span class="ref-mono ref-muted">~5–10%</span></div>
+            <div class="ref-row"><span>RAM overhead</span><span class="ref-mono ref-muted">~4–8 GB</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Windows Ref -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-wrap">
+          <div class="card-icon ci-blue">🪟</div>
+          <div>
+            <div class="card-title">Windows Server Licensing</div>
+            <div class="card-desc">Quick reference</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body" style="padding:16px 20px;">
+        <div class="ref-block">
+          <div class="ref-box">
+            <div class="ref-box-title" style="color:var(--accent-blue-bright);">Standard Edition</div>
+            Covers <strong style="color:var(--text-primary);">2 Windows VMs</strong> per license. Licensed per physical core — minimum 16 cores per server. Stack multiple licenses for more VMs.
+          </div>
+          <div class="ref-box">
+            <div class="ref-box-title" style="color:#A78BFA;">Datacenter Edition</div>
+            Covers <strong style="color:var(--text-primary);">unlimited Windows VMs</strong>. Same per-core licensing model. Better value when running 3+ Windows VMs on a host.
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);line-height:1.6;padding:8px 10px;background:rgba(255,255,255,0.025);border-radius:var(--radius-sm);">
+            ℹ️ Linux VMs and non-Windows guests do not consume Windows Server licenses. Licensing applies per physical host.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SQL Ref -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-wrap">
+          <div class="card-icon ci-purple">🗄️</div>
+          <div>
+            <div class="card-title">SQL Server Licensing</div>
+            <div class="card-desc">Core-based per-VM model</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body" style="padding:16px 20px;">
+        <div class="ref-block">
+          <div class="ref-box">
+            <div class="ref-box-title" style="color:#34D399;">Standard Edition</div>
+            Per-VM core licensing. Min <strong style="color:var(--text-primary);">4 cores/VM</strong>. Capped at 4 sockets / 24 cores and 128 GB RAM per instance.
+          </div>
+          <div class="ref-box">
+            <div class="ref-box-title" style="color:#A78BFA;">Enterprise Edition</div>
+            Per-VM core licensing. Min <strong style="color:var(--text-primary);">4 cores/VM</strong>. No limits on cores, sockets, or RAM. Required for large workloads.
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);line-height:1.6;padding:8px 10px;background:rgba(255,255,255,0.025);border-radius:var(--radius-sm);">
+            ℹ️ Software Assurance (SA) required for license mobility across hosts. Consider Azure Hybrid Benefit if moving to cloud.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calculation Log -->
+    <div class="log-wrap">
+      <div class="log-head">
+        <div class="log-title">
+          🗒 Calculation Log
+          <span class="log-count" id="log-count">0</span>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="clearLog()" id="log-clear-btn" style="display:none;">Clear</button>
+      </div>
+      <div id="log-body">
+        <div class="log-empty" id="log-empty">No calculations yet — hit Calculate to start logging.</div>
+        <div class="log-list" id="log-list"></div>
+      </div>
+    </div>
+
+  </div><!-- /right-col -->
+</div><!-- /main -->
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────────
+const OS_OPTS = [
+  {v:'windows-server',     l:'Windows Server',          win:true,  sql:false},
+  {v:'windows-server-sql', l:'Windows Server + SQL',    win:true,  sql:true},
+  {v:'windows-10-11',      l:'Windows 10 / 11',         win:true,  sql:false},
+  {v:'ubuntu',             l:'Ubuntu Linux',             win:false, sql:false},
+  {v:'rhel',               l:'RHEL / CentOS',            win:false, sql:false},
+  {v:'debian',             l:'Debian Linux',             win:false, sql:false},
+  {v:'suse',               l:'SUSE Linux',               win:false, sql:false},
+  {v:'other-linux',        l:'Other Linux',              win:false, sql:false},
+  {v:'other',              l:'Other / Unknown',          win:false, sql:false},
+];
+
+const SQL_EDITIONS = [
+  {v:'standard',   l:'SQL Standard'},
+  {v:'enterprise', l:'SQL Enterprise'},
+  {v:'express',    l:'SQL Express (Free)'},
+  {v:'developer',  l:'SQL Developer (Free)'},
+];
+
+let groups = [];
+let gid = 0;
+let calcLog = [];
+let logId = 0;
+
+// ── Group CRUD ────────────────────────────────────────────────────────────────
+function addVMGroup(name='') {
+  gid++;
+  groups.push({id:gid, name:name||`VM Group ${gid}`, os:'windows-server', vcpu:2, ram:8, storage:100, count:1, sql:false, sqlEdition:'standard'});
+  renderGroups();
+}
+
+function removeGroup(id) {
+  groups = groups.filter(g=>g.id!==id);
+  renderGroups();
+}
+
+function updateGroup(id, field, val) {
+  const g = groups.find(g=>g.id===id);
+  if (!g) return;
+  if (field==='os') {
+    g.os = val;
+    const o = OS_OPTS.find(o=>o.v===val)||{};
+    if (o.sql && !g.sql) { g.sql = true; }
+    if (!o.sql && !o.win) { /* keep sql toggle state */ }
+  } else if (['vcpu','ram','count'].includes(field)) {
+    g[field] = Math.max(0, parseInt(val)||0);
+  } else if (field==='storage') {
+    g[field] = Math.max(0, Math.round(parseFloat(val)||0));
+  } else if (field==='sql') {
+    g.sql = val;
+  } else {
+    g[field] = val;
+  }
+  renderGroups();
+}
+
+function renderGroups() {
+  const c = document.getElementById('vm-groups');
+  if (!groups.length) {
+    c.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted);font-size:13px;">No VM groups yet. Click "Add VM Group" below.</div>';
+    return;
+  }
+  c.innerHTML = groups.map(g => {
+    const o = OS_OPTS.find(x=>x.v===g.os)||OS_OPTS[0];
+    const hasSQL = g.sql || o.sql;
+    const icon = o.win ? '🪟' : '🐧';
+    const sqlEdOpts = SQL_EDITIONS.map(e=>`<option value="${e.v}"${g.sqlEdition===e.v?' selected':''}>${e.l}</option>`).join('');
+    return `
+    <div class="vm-group">
+      <div class="vm-group-head">
+        <div style="display:flex;align-items:center;gap:8px;flex:1;">
+          <span style="font-size:15px;">${icon}</span>
+          <input class="vm-name-input" type="text" value="${esc(g.name)}" placeholder="Group name" onchange="updateGroup(${g.id},'name',this.value)">
+          ${hasSQL?'<span class="sql-badge">SQL</span>':''}
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="removeGroup(${g.id})">✕ Remove</button>
+      </div>
+      <div class="vm-group-body">
+        <div class="fg span2">
+          <label class="fl">Operating System</label>
+          <select class="fs" onchange="updateGroup(${g.id},'os',this.value)">
+            ${OS_OPTS.map(op=>`<option value="${op.v}"${g.os===op.v?' selected':''}>${op.l}</option>`).join('')}
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl">VM Count</label>
+          <input type="number" class="fi" value="${g.count}" min="1" step="1" onchange="updateGroup(${g.id},'count',this.value)">
+        </div>
+        <div class="fg">
+          <label class="fl">vCPUs / VM</label>
+          <input type="number" class="fi" value="${g.vcpu}" min="1" step="1" onchange="updateGroup(${g.id},'vcpu',this.value)">
+        </div>
+        <div class="fg">
+          <label class="fl">RAM / VM</label>
+          <div class="iw"><input type="number" class="fi" value="${g.ram}" min="1" step="1" onchange="updateGroup(${g.id},'ram',this.value)"><span class="iu">GB</span></div>
+        </div>
+        <div class="fg">
+          <label class="fl">Storage / VM</label>
+          <div class="iw"><input type="number" class="fi" value="${g.storage}" min="1" step="1" onchange="updateGroup(${g.id},'storage',this.value)"><span class="iu">GB</span></div>
+        </div>
+        ${hasSQL ? `
+        <div class="fg">
+          <label class="fl">SQL Edition</label>
+          <select class="fs" onchange="updateGroup(${g.id},'sqlEdition',this.value)">${sqlEdOpts}</select>
+        </div>` : ''}
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <span class="fl">Has SQL</span>
+          <div class="tg-wrap">
+            <input type="checkbox" class="tg-in" id="sql-${g.id}" ${hasSQL?'checked':''} onchange="updateGroup(${g.id},'sql',this.checked)">
+            <label class="tg-track" for="sql-${g.id}"></label>
+            <span class="tg-text">${hasSQL?'Yes':'No'}</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Calculation ───────────────────────────────────────────────────────────────
+function calculate() {
+  if (!groups.length) { alert('Add at least one VM group first.'); return; }
+
+  let totalVMs=0, totalvCPU=0, totalRAM=0, totalStorGB=0, winVMs=0, sqlGroups=[];
+
+  groups.forEach(g => {
+    const n = Math.max(1, g.count||1);
+    const o = OS_OPTS.find(x=>x.v===g.os)||{};
+    totalVMs += n;
+    totalvCPU += g.vcpu * n;
+    totalRAM  += g.ram * n;
+    totalStorGB += g.storage * n;
+    if (o.win) winVMs += n;
+    const hasSQL = g.sql || o.sql;
+    if (hasSQL) sqlGroups.push({...g, count:n});
+  });
+
+  const storTB = totalStorGB / 1024;
+
+  // Current hardware
+  const hwSock = parseInt(document.getElementById('hw-sockets').value)||2;
+  const hwCore = parseInt(document.getElementById('hw-cores').value)||16;
+  const hwGHz  = parseFloat(document.getElementById('hw-ghz').value)||2.4;
+  const hwRAM  = parseInt(document.getElementById('hw-ram').value)||256;
+  const hwStor = parseFloat(document.getElementById('hw-storage').value)||10;
+  const hwHT   = document.getElementById('hw-ht').value==='yes';
+
+  const hwTotalCores = hwSock * hwCore;
+  const hwLogical    = hwHT ? hwTotalCores*2 : hwTotalCores;
+  const util_cpu  = (totalvCPU / hwLogical) * 100;
+  const util_ram  = (totalRAM  / hwRAM)     * 100;
+  const util_stor = (storTB    / hwStor)    * 100;
+
+  // Recommended spec
+  const opt = buildSpec(totalvCPU, totalRAM, storTB, 4,  1.25, 1.30, 8,  'opt');
+  const fit = buildSpec(totalvCPU, totalRAM, storTB, 8,  1.10, 1.15, 8,  'fit');
+
+  // Licensing
+  const winLic = calcWinLic(winVMs, opt.sockets, opt.coresPerSock);
+  const sqlLic = calcSQLLic(sqlGroups);
+
+  // Render
+  renderStats({totalVMs, totalvCPU, totalRAM, storTB, winVMs, sqlGroups, hwLogical, hwRAM, hwStor, util_cpu, util_ram, util_stor});
+  renderTable();
+  renderRecs({opt, fit, totalvCPU, totalRAM, storTB});
+  renderLic({winLic, sqlLic, winVMs, sqlGroups});
+
+  // Log
+  logCalculation({
+    hwName: document.getElementById('hw-name').value || 'Unnamed Server',
+    hwSock, hwCore, hwRAM, hwStor,
+    totalVMs, totalvCPU, totalRAM, storTB,
+    winVMs, sqlCount: sqlGroups.reduce((a,g)=>a+g.count,0),
+    opt, fit,
+    groupSnapshot: groups.map(g=>({...g}))
+  });
+
+  const res = document.getElementById('results');
+  res.style.display = 'flex';
+  setTimeout(()=>res.scrollIntoView({behavior:'smooth',block:'start'}), 80);
+}
+
+// ── Calculation Log ───────────────────────────────────────────────────────────
+function logCalculation(data) {
+  logId++;
+  const now = new Date();
+  const ts = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  const entry = { id: logId, ts, ...data };
+  calcLog.unshift(entry); // newest first
+  renderLog();
+}
+
+function clearLog() {
+  calcLog = [];
+  logId = 0;
+  renderLog();
+}
+
+function toggleLogEntry(id) {
+  const el = document.getElementById(`log-detail-${id}`);
+  if (el) el.classList.toggle('open');
+}
+
+function renderLog() {
+  const countEl = document.getElementById('log-count');
+  const emptyEl = document.getElementById('log-empty');
+  const listEl  = document.getElementById('log-list');
+  const clearBtn = document.getElementById('log-clear-btn');
+
+  countEl.textContent = calcLog.length;
+  clearBtn.style.display = calcLog.length ? 'inline-flex' : 'none';
+  emptyEl.style.display  = calcLog.length ? 'none' : 'block';
+
+  listEl.innerHTML = calcLog.map(e => `
+    <div class="log-entry" onclick="toggleLogEntry(${e.id})">
+      <div class="log-entry-head">
+        <div class="log-entry-row1">
+          <span class="log-num">#${e.id}</span>
+          <span class="log-ts">${e.ts}</span>
+          <span class="log-hw" title="${esc(e.hwName)}">${esc(e.hwName)}</span>
+        </div>
+        <div class="log-entry-row2">
+          <div class="log-pills">
+            <span class="log-pill lp-blue">${e.totalVMs} VMs</span>
+            <span class="log-pill lp-blue">${e.totalvCPU} vCPU</span>
+            <span class="log-pill lp-blue">${e.totalRAM}GB RAM</span>
+            <span class="log-pill lp-green">Opt: ${e.opt.sockets}S/${e.opt.coresPerSock}C·${e.opt.ram}GB</span>
+            <span class="log-pill lp-amber">Fit: ${e.fit.sockets}S/${e.fit.coresPerSock}C·${e.fit.ram}GB</span>
+          </div>
+        </div>
+      </div>
+      <div class="log-entry-detail" id="log-detail-${e.id}">
+        <div class="log-detail-box" style="grid-column:span 2;">
+          <div class="log-detail-lbl">Current Hardware</div>
+          <div class="log-detail-val" style="font-size:11px;">${e.hwSock}S × ${e.hwCore}C · ${e.hwRAM}GB RAM · ${e.hwStor}TB storage</div>
+        </div>
+        <div class="log-detail-box">
+          <div class="log-detail-lbl">✦ Optimal Spec</div>
+          <div class="log-detail-val" style="color:#34D399;">${e.opt.sockets}S/${e.opt.coresPerSock}C · ${e.opt.ram}GB · ${e.opt.stor}TB</div>
+          <div class="log-detail-sub">${e.opt.totalCores} cores · ${(e.totalvCPU/e.opt.totalCores).toFixed(1)}:1 overcommit</div>
+        </div>
+        <div class="log-detail-box">
+          <div class="log-detail-lbl">◈ Fit for Purpose</div>
+          <div class="log-detail-val" style="color:#FCD34D;">${e.fit.sockets}S/${e.fit.coresPerSock}C · ${e.fit.ram}GB · ${e.fit.stor}TB</div>
+          <div class="log-detail-sub">${e.fit.totalCores} cores · ${(e.totalvCPU/e.fit.totalCores).toFixed(1)}:1 overcommit</div>
+        </div>
+        <div class="log-detail-box">
+          <div class="log-detail-lbl">Windows VMs</div>
+          <div class="log-detail-val">${e.winVMs}</div>
+        </div>
+        <div class="log-detail-box">
+          <div class="log-detail-lbl">SQL Instances</div>
+          <div class="log-detail-val">${e.sqlCount}</div>
+        </div>
+        <div class="log-detail-box" style="grid-column:span 2;">
+          <div class="log-detail-lbl">VM Groups (${e.groupSnapshot.length})</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:3px;line-height:1.8;">
+            ${e.groupSnapshot.map(g=>`${g.count}× ${esc(g.name)} — ${g.vcpu} vCPU / ${g.ram}GB / ${g.storage}GB`).join('<br>')}
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Spec builder
+function buildSpec(vCPU, ramGB, storTB, cpuRatio, ramMult, storMult, hypRAMGB, tier) {
+  const coreCounts  = [8,12,16,20,24,28,32,36,40,48,56,64];
+  const ramOptions  = [64,96,128,192,256,320,384,512,768,1024,1536,2048];
+  const storOptions = [1,2,4,6,8,10,12,16,20,24,32,48,64,96,128];
+
+  const coresNeeded = Math.ceil(vCPU / cpuRatio);
+  const ramNeeded   = Math.ceil(ramGB * ramMult + hypRAMGB);
+  const storNeeded  = Math.ceil(storTB * storMult * 10) / 10;
+
+  let sockets = 2;
+  let cPerSock = coreCounts.find(c => c * sockets >= coresNeeded) || 64;
+  if (coresNeeded > 128) {
+    sockets = 4;
+    cPerSock = coreCounts.find(c => c * sockets >= coresNeeded) || 64;
+  }
+
+  const ram  = ramOptions.find(r => r >= ramNeeded) || ramOptions[ramOptions.length-1];
+  const stor = storOptions.find(s => s >= storNeeded) || storOptions[storOptions.length-1];
+  const totalCores = sockets * cPerSock;
+
+  return {
+    sockets, coresPerSock: cPerSock, totalCores, ram, stor,
+    cpu: suggestCPU(cPerSock, tier),
+    ramCfg: suggestRAM(ram),
+    storCfg: suggestStor(stor),
+  };
+}
+
+function suggestCPU(cores, tier) {
+  if (tier==='opt') {
+    if (cores<=16) return 'Intel Xeon Gold 6416H (18C, 2.2GHz) or AMD EPYC 9254 (24C, 2.9GHz)';
+    if (cores<=24) return 'Intel Xeon Gold 6430 (32C, 2.1GHz) or AMD EPYC 9354 (32C, 3.25GHz)';
+    if (cores<=32) return 'Intel Xeon Platinum 8452Y (36C, 2.0GHz) or AMD EPYC 9454 (48C, 2.75GHz)';
+    if (cores<=48) return 'Intel Xeon Platinum 8480+ (60C, 2.0GHz) or AMD EPYC 9554 (64C, 3.1GHz)';
+    return 'AMD EPYC 9654 (96C, 2.4GHz) or Intel Xeon Platinum 8592+ (64C, 1.9GHz)';
+  } else {
+    if (cores<=12) return 'Intel Xeon Silver 4410Y (12C, 2.0GHz) or AMD EPYC 9224 (24C, 2.5GHz)';
+    if (cores<=16) return 'Intel Xeon Gold 6416H (18C, 2.2GHz) or AMD EPYC 9254 (24C, 2.9GHz)';
+    if (cores<=24) return 'Intel Xeon Gold 6426Y (16C, 2.5GHz) or AMD EPYC 9334 (32C, 2.7GHz)';
+    if (cores<=32) return 'Intel Xeon Gold 6430 (32C, 2.1GHz) or AMD EPYC 9354 (32C, 3.25GHz)';
+    return 'Intel Xeon Platinum 8452Y (36C, 2.0GHz) or AMD EPYC 9454 (48C, 2.75GHz)';
+  }
+}
+
+function suggestRAM(gb) {
+  if (gb<=96)  return `${Math.ceil(gb/16)}× 16GB or ${Math.ceil(gb/32)}× 32GB DDR5-4800 RDIMMs`;
+  if (gb<=256) return `${Math.ceil(gb/32)}× 32GB DDR5-4800 RDIMMs`;
+  if (gb<=512) return `${Math.ceil(gb/64)}× 64GB DDR5-4800 RDIMMs`;
+  return `${Math.ceil(gb/64)}× 64GB or ${Math.ceil(gb/128)}× 128GB DDR5-4800 RDIMMs`;
+}
+
+function suggestStor(tb) {
+  if (tb<=2)  return '4× 960GB NVMe SSD (RAID-10) — all-flash local storage';
+  if (tb<=4)  return '4× 1.92TB NVMe SSD (RAID-10) — or dedicated SAN/NAS';
+  if (tb<=10) return '4× 3.84TB SSD (RAID-10) — consider shared storage at this scale';
+  if (tb<=20) return 'SAN/NAS recommended: 6× 3.84TB SSD (RAID-6) or dedicated array';
+  return 'Dedicated storage array: NVMe SAN, VSAN, or hyper-converged (Nutanix, VMware vSAN)';
+}
+
+// Windows licensing
+function calcWinLic(winVMs, sockets, coresPerSock) {
+  if (!winVMs) return null;
+  const physCores = Math.max(16, sockets * coresPerSock);
+  const corePacks = Math.ceil(physCores / 16); // number of 16-core packs
+  const recDC = winVMs > 2;
+  // Standard: covers 2 VMs per full server-level license (stacked per pair of VMs)
+  const stdStacks = Math.ceil(winVMs / 2);
+  return { winVMs, physCores, corePacks, recDC, stdStacks };
+}
+
+// SQL licensing
+function calcSQLLic(sqlGroups) {
+  if (!sqlGroups.length) return [];
+  return sqlGroups.map(g => {
+    const edition = g.sqlEdition || 'standard';
+    const isFree = ['express','developer'].includes(edition);
+    const licensedCores = Math.max(4, g.vcpu);
+    const corePacks = Math.ceil(licensedCores / 2); // 2-core packs
+    const needsEnt = g.vcpu > 24 || edition==='enterprise';
+    return { name:g.name, count:g.count, vcpu:g.vcpu, licensedCores, corePacks, edition, isFree, needsEnt };
+  });
+}
+
+// ── Render helpers ────────────────────────────────────────────────────────────
+function renderStats({totalVMs,totalvCPU,totalRAM,storTB,winVMs,sqlGroups,hwLogical,hwRAM,hwStor,util_cpu,util_ram,util_stor}) {
+  const sqlCount = sqlGroups.reduce((a,g)=>a+g.count, 0);
+  const storDisp = storTB>=1 ? `${(Math.round(storTB*10)/10)}<span class="stat-unit">TB</span>` : `${Math.round(storTB*1024)}<span class="stat-unit">GB</span>`;
+
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card"><div class="stat-lbl">Total VMs</div><div class="stat-val">${totalVMs}</div><div class="stat-sub">${winVMs} Windows · ${totalVMs-winVMs} Linux/Other</div></div>
+    <div class="stat-card"><div class="stat-lbl">Total vCPUs ${infoIcon('Sum of all vCPUs assigned across every VM group. This is the virtual CPU demand the new server must accommodate within its physical core capacity.')}</div><div class="stat-val">${totalvCPU}</div><div class="stat-sub">Across all groups</div></div>
+    <div class="stat-card"><div class="stat-lbl">Total RAM ${infoIcon('Sum of all RAM allocated to VMs. The new server must have at least this much physical RAM plus hypervisor overhead (~4–8 GB). RAM cannot be overcommitted in production environments.')}</div><div class="stat-val">${totalRAM}<span class="stat-unit">GB</span></div><div class="stat-sub">VM allocations</div></div>
+    <div class="stat-card"><div class="stat-lbl">Total Storage ${infoIcon('Sum of all VM disk allocations. Thin-provisioned disks only consume space as data is written, but the calculator uses allocated values for worst-case planning. Add buffer for snapshots and growth.')}</div><div class="stat-val">${storDisp}</div><div class="stat-sub">VM disk allocations</div></div>
+    <div class="stat-card"><div class="stat-lbl">Windows VMs ${infoIcon('Count of VMs running Windows Server or Windows 10/11. Each requires a Windows Server license on the physical host — either Standard (2 VMs per license) or Datacenter (unlimited VMs).')}</div><div class="stat-val">${winVMs}</div><div class="stat-sub">${winVMs>0?'Require WS licensing':'No Windows VMs'}</div></div>
+    <div class="stat-card"><div class="stat-lbl">SQL Instances ${infoIcon('Count of VMs with SQL Server enabled. SQL Server is licensed per VM based on virtual core count (minimum 4 cores, billed in 2-core packs). Express and Developer editions are free.')}</div><div class="stat-val">${sqlCount}</div><div class="stat-sub">${sqlCount>0?'Require SQL licensing':'No SQL VMs'}</div></div>
+  `;
+
+  document.getElementById('util-bars').innerHTML = `
+    <div class="util-section-lbl">Current Hardware Utilisation — if migrating to existing host</div>
+    ${ubar('CPU', util_cpu, `${totalvCPU} vCPUs vs ${hwLogical} logical CPUs on current server`)}
+    ${ubar('RAM', util_ram, `${totalRAM} GB required vs ${hwRAM} GB available`)}
+    ${ubar('Storage', util_stor, `${Math.round(storTB*10)/10} TB required vs ${hwStor} TB available`)}
+  `;
+}
+
+function ubar(label, pct, note) {
+  const cap = Math.min(pct, 100);
+  const cls = pct<70?'u-good':pct<90?'u-warn':'u-danger';
+  const icon = pct<70?'✓':pct<90?'⚠':'✕';
+  return `<div class="ubar ${cls}">
+    <div class="ubar-top"><span class="ubar-name">${icon} ${label}</span><span class="ubar-pct">${Math.round(pct)}%</span></div>
+    <div class="ubar-track"><div class="ubar-fill" style="width:${cap}%"></div></div>
+    <div class="ubar-note">${note}</div>
+  </div>`;
+}
+
+function renderTable() {
+  document.getElementById('vm-table-wrap').innerHTML = `
+    <table class="vm-table">
+      <thead>
+        <tr>
+          <th>Group</th><th>OS</th><th class="r">Count</th><th class="r">vCPU (total)</th><th class="r">RAM (total)</th><th class="r">Storage (total)</th><th style="text-align:center;">SQL</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${groups.map(g => {
+          const o = OS_OPTS.find(x=>x.v===g.os)||{l:'—',win:false};
+          const n = g.count||1;
+          const hasSQL = g.sql || o.sql;
+          const storTotal = g.storage*n;
+          const storDisp = storTotal>=1024 ? `${(storTotal/1024).toFixed(2)}TB` : `${storTotal}GB`;
+          return `<tr>
+            <td><strong>${esc(g.name)}</strong></td>
+            <td>${o.win?'🪟':'🐧'} ${o.l}</td>
+            <td class="r">${n}</td>
+            <td class="r">${g.vcpu}×${n} = <strong>${g.vcpu*n}</strong></td>
+            <td class="r">${g.ram}×${n} = <strong>${g.ram*n} GB</strong></td>
+            <td class="r">${g.storage}×${n} = <strong>${storDisp}</strong></td>
+            <td style="text-align:center;">${hasSQL?`<span class="sql-badge">${(g.sqlEdition||'std').substring(0,3).toUpperCase()}</span>`:'<span style="color:var(--text-muted);">—</span>'}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+function renderRecs({opt, fit, totalvCPU, totalRAM, storTB}) {
+  const optRatio = (totalvCPU / opt.totalCores).toFixed(1);
+  const fitRatio = (totalvCPU / fit.totalCores).toFixed(1);
+
+  const TIP = {
+    cpuConfig: 'S = Sockets, C = Cores per socket. A 2S/16C server = 32 physical cores. More sockets add memory bandwidth and NUMA performance but increase cost. The overcommit ratio shown is virtual CPUs vs physical cores.',
+    cpuOvercommit: 'vCPU overcommit is how many virtual CPUs share each physical core. Lower = better VM performance. 4:1 is safe for mixed workloads; above 8:1 risks CPU contention and VM slowdowns under load.',
+    systemRAM: 'Total physical RAM the new server needs. Includes overhead for the hypervisor (~4–8 GB) and a growth buffer. Unlike CPU, RAM cannot be safely overcommitted in production — every VM must have its allocated RAM available.',
+    storageOpt: 'Total storage including a 30% buffer for VM snapshots (used during backups and live migrations) and capacity headroom for data growth. Snapshots can temporarily double the disk usage of active VMs.',
+    storageFit: 'Total storage with a 15% minimum buffer. This covers basic snapshot usage but leaves very little room for growth. Plan for a storage expansion within 12–18 months.',
+    minCoresOpt: `The minimum number of physical CPU cores required at a 4:1 vCPU overcommit ratio. Formula: ceil(total vCPUs ÷ 4). The recommended config rounds up to the next standard CPU die size. More physical cores means less contention and better burst performance across VMs.`,
+    minCoresFit: `The minimum physical core count at an 8:1 vCPU overcommit ratio. Formula: ceil(total vCPUs ÷ 8). Adequate for low-to-medium utilisation workloads but VMs will compete for CPU time under peak load.`,
+    suggestedHW: 'CPU models are suggestions based on the core count needed. Both Intel Xeon and AMD EPYC are suitable for VMware ESXi and Hyper-V. AMD EPYC generally offers more cores per socket at lower cost; Intel Xeon may offer better single-thread performance for latency-sensitive workloads.',
+    ramCfg: 'RDIMM (Registered DIMM) is the standard for server-grade RAM. DDR5-4800 is current-gen. Populate DIMMs symmetrically across all memory channels per socket for maximum bandwidth. Check your motherboard\'s QVL (Qualified Vendor List) before purchasing.',
+  };
+
+  document.getElementById('rec-section').innerHTML = `
+    <div class="rec-card optimal">
+      <div class="rec-head">
+        <span class="rec-badge rb-opt">✦ Optimal</span>
+        <div><div class="rec-title">Recommended Server Spec</div><div class="rec-sub">Best performance &amp; room to grow · comfortable overcommit ratios</div></div>
+      </div>
+      <div class="rec-body">
+        <div class="spec-box">
+          <div class="spec-lbl">CPU Config ${infoIcon(TIP.cpuConfig)}</div>
+          <div class="spec-val sv-green">${opt.sockets}S / ${opt.coresPerSock}C per socket</div>
+          <div class="spec-note">${opt.totalCores} physical cores · <span data-tip="${TIP.cpuOvercommit}">${optRatio}:1 vCPU overcommit</span></div>
+        </div>
+        <div class="spec-box">
+          <div class="spec-lbl">System RAM ${infoIcon(TIP.systemRAM)}</div>
+          <div class="spec-val sv-green">${opt.ram} GB</div>
+          <div class="spec-note" data-tip="${TIP.ramCfg}">${opt.ramCfg}</div>
+        </div>
+        <div class="spec-box">
+          <div class="spec-lbl">Storage ${infoIcon(TIP.storageOpt)}</div>
+          <div class="spec-val sv-green">${opt.stor} TB</div>
+          <div class="spec-note">+30% for snapshots &amp; growth</div>
+        </div>
+        <div class="spec-box">
+          <div class="spec-lbl">Min Cores Needed ${infoIcon(TIP.minCoresOpt)}</div>
+          <div class="spec-val sv-green">${Math.ceil(totalvCPU/4)}</div>
+          <div class="spec-note">At 4:1 vCPU overcommit</div>
+        </div>
+      </div>
+      <div class="rec-foot">
+        <div class="rec-notes-lbl">Suggested Hardware ${infoIcon(TIP.suggestedHW)}</div>
+        <ul class="rec-notes">
+          <li>${opt.cpu}</li>
+          <li style="margin-top:4px;">${opt.storCfg}</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="rec-card adequate">
+      <div class="rec-head">
+        <span class="rec-badge rb-fit">◈ Fit for Purpose</span>
+        <div><div class="rec-title">Minimum Viable Spec</div><div class="rec-sub">Lower cost · works today but limited headroom · 12–18 month refresh horizon</div></div>
+      </div>
+      <div class="rec-body">
+        <div class="spec-box">
+          <div class="spec-lbl">CPU Config ${infoIcon(TIP.cpuConfig)}</div>
+          <div class="spec-val sv-amber">${fit.sockets}S / ${fit.coresPerSock}C per socket</div>
+          <div class="spec-note">${fit.totalCores} physical cores · <span data-tip="${TIP.cpuOvercommit}">${fitRatio}:1 vCPU overcommit</span></div>
+        </div>
+        <div class="spec-box">
+          <div class="spec-lbl">System RAM ${infoIcon(TIP.systemRAM)}</div>
+          <div class="spec-val sv-amber">${fit.ram} GB</div>
+          <div class="spec-note" data-tip="${TIP.ramCfg}">${fit.ramCfg}</div>
+        </div>
+        <div class="spec-box">
+          <div class="spec-lbl">Storage ${infoIcon(TIP.storageFit)}</div>
+          <div class="spec-val sv-amber">${fit.stor} TB</div>
+          <div class="spec-note">+15% minimum buffer</div>
+        </div>
+        <div class="spec-box">
+          <div class="spec-lbl">Min Cores Needed ${infoIcon(TIP.minCoresFit)}</div>
+          <div class="spec-val sv-amber">${Math.ceil(totalvCPU/8)}</div>
+          <div class="spec-note">At 8:1 vCPU overcommit</div>
+        </div>
+      </div>
+      <div class="rec-foot">
+        <div class="rec-notes-lbl">Suggested Hardware ${infoIcon(TIP.suggestedHW)}</div>
+        <ul class="rec-notes">
+          <li>${fit.cpu}</li>
+          <li style="margin-top:4px;">${fit.storCfg}</li>
+          <li style="margin-top:4px;color:#FCD34D;">⚠ Limited growth headroom — plan for a 12–18 month refresh cycle</li>
+        </ul>
+      </div>
+    </div>
+  `;
+}
+
+function renderLic({winLic, sqlLic, winVMs, sqlGroups}) {
+  const hasWin = !!winLic;
+  const hasSQL = sqlLic.length > 0;
+
+  if (!hasWin && !hasSQL) {
+    document.getElementById('lic-section').innerHTML = `
+      <div class="lic-wrap">
+        <div class="lic-head"><span style="font-size:18px;">🎫</span><div class="lic-title">Licensing</div></div>
+        <div class="lic-body"><div class="alert alert-info">ℹ️ No Windows Server or SQL Server VMs detected — no Microsoft licensing required for these VMs.</div></div>
+      </div>`;
+    return;
+  }
+
+  let winHtml = '';
+  if (hasWin) {
+    const badge = winLic.recDC
+      ? '<span class="ed-badge eb-dc">Datacenter</span>'
+      : '<span class="ed-badge eb-std">Standard</span>';
+    if (winLic.recDC) {
+      winHtml = `<div class="lic-item win">
+        <div class="lic-item-title">🪟 Windows Server ${badge}</div>
+        <div class="lic-detail">
+          You have <strong>${winLic.winVMs} Windows VMs</strong> — Datacenter Edition is recommended.<br>
+          The recommended server has <strong>${winLic.physCores} licensable cores</strong> (16-core minimum applies).<br><br>
+          Requires: <strong>${winLic.corePacks}× Windows Server Datacenter 16-core pack(s)</strong><br>
+          This grants <strong>unlimited Windows VMs</strong> on the licensed physical host.
+        </div>
+        <div class="lic-note">💡 Datacenter breaks even over Standard at 3+ Windows VMs. At 1–2 Windows VMs, Standard is cheaper — but purchasing Datacenter now avoids future license stacking as you grow.</div>
+      </div>`;
+    } else {
+      winHtml = `<div class="lic-item win">
+        <div class="lic-item-title">🪟 Windows Server ${badge}</div>
+        <div class="lic-detail">
+          You have <strong>${winLic.winVMs} Windows VM(s)</strong> — Standard Edition is sufficient.<br>
+          The recommended server has <strong>${winLic.physCores} licensable cores</strong>.<br><br>
+          Requires: <strong>${winLic.stdStacks}× Windows Server Standard license stack(s)</strong> (each covers 2 VMs and all physical cores).<br>
+          A single Standard stack = ${winLic.corePacks}× 16-core pack(s).
+        </div>
+        <div class="lic-note">💡 Each Standard license only covers 2 Windows VMs — you must stack (re-purchase) for each additional pair. If you plan to add more Windows VMs, consider Datacenter now.</div>
+      </div>`;
+    }
+  }
+
+  let sqlHtml = '';
+  if (hasSQL) {
+    const hasEnterprise = sqlLic.some(v=>v.needsEnt && !v.isFree);
+    const badge = hasEnterprise ? '<span class="ed-badge eb-ent">Enterprise</span>' : '';
+    const rows = sqlLic.map(vm => {
+      if (vm.isFree) return `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border-subtle);">
+          <span style="font-size:12px;color:var(--text-secondary);">${esc(vm.name)} (${vm.count}× VM)</span>
+          <span class="ed-badge eb-std">${vm.edition.toUpperCase()} – FREE</span>
+        </div>`;
+      const edBadge = vm.needsEnt ? '<span class="ed-badge eb-ent">Enterprise</span>' : '<span class="ed-badge eb-std">Standard</span>';
+      return `
+        <div style="padding:6px 0;border-bottom:1px solid var(--border-subtle);">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:12px;color:var(--text-secondary);">${esc(vm.name)} (${vm.count}× VM · ${vm.vcpu} vCPU each)</span>
+            ${edBadge}
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+            ${vm.licensedCores} licensed cores/VM × ${vm.count} VMs = <strong style="color:var(--text-secondary);">${vm.corePacks*vm.count}× 2-core pack(s)</strong>
+            ${vm.needsEnt?' · <span style="color:#A78BFA;">Enterprise required</span>':''}
+          </div>
+        </div>`;
+    }).join('');
+
+    sqlHtml = `<div class="lic-item sql">
+      <div class="lic-item-title">🗄️ SQL Server Licensing ${badge}</div>
+      <div class="lic-detail">SQL Server is licensed per VM based on virtual cores. Minimum 4 cores per VM, billed in 2-core packs.</div>
+      <div style="margin-top:10px;">${rows}</div>
+      <div class="lic-note">💡 Per-VM licensing is standard for virtual environments. SQL must be licensed for <em>at least</em> the vCPUs allocated. Ensure Software Assurance is included for license mobility across hosts.</div>
+    </div>`;
+  }
+
+  document.getElementById('lic-section').innerHTML = `
+    <div class="lic-wrap">
+      <div class="lic-head">
+        <span style="font-size:18px;">🎫</span>
+        <div class="lic-title">Microsoft Licensing Recommendations</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-left:auto;">Based on recommended server spec</div>
+      </div>
+      <div class="lic-body">
+        ${winHtml}
+        ${sqlHtml}
+        <div class="alert alert-warn">⚠ Indicative only. Always verify licensing requirements with a Microsoft partner or Software Asset Management (SAM) specialist. Rules vary by EA, SPLA, OEM, and SA status.</div>
+      </div>
+    </div>`;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Tooltip system ────────────────────────────────────────────────────────────
+function infoIcon(tip) {
+  return `<span class="info-icon" data-tip="${tip.replace(/"/g,"'").replace(/\n/g,' ')}">i</span>`;
+}
+
+(function initTooltip() {
+  const tt = document.createElement('div');
+  tt.id = 'tt';
+  document.body.appendChild(tt);
+
+  document.addEventListener('mouseover', e => {
+    const el = e.target.closest('[data-tip]');
+    if (el) { tt.textContent = el.dataset.tip; tt.style.display = 'block'; }
+  });
+  document.addEventListener('mouseout', e => {
+    const still = e.relatedTarget && e.relatedTarget.closest('[data-tip]');
+    if (!still) tt.style.display = 'none';
+  });
+  document.addEventListener('mousemove', e => {
+    if (tt.style.display !== 'block') return;
+    let x = e.clientX + 14, y = e.clientY - 10;
+    if (x + 240 > window.innerWidth)  x = e.clientX - 248;
+    if (y + 100 > window.innerHeight) y = e.clientY - 110;
+    tt.style.left = x + 'px';
+    tt.style.top  = y + 'px';
+  });
+})();
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+// Pre-populate with clean example values
+(function() {
+  gid++;
+  groups.push({id:gid, name:'Web / App Servers', os:'windows-server', vcpu:4, ram:8,  storage:100, count:2, sql:false, sqlEdition:'standard'});
+  gid++;
+  groups.push({id:gid, name:'Database Servers',  os:'windows-server', vcpu:8, ram:32, storage:500, count:1, sql:true,  sqlEdition:'standard'});
+  gid++;
+  groups.push({id:gid, name:'File / Print Servers', os:'windows-server', vcpu:2, ram:8, storage:200, count:1, sql:false, sqlEdition:'standard'});
+  renderGroups();
+})();
+</script>
+</body>
+</html>
