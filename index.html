@@ -802,12 +802,212 @@ body{font-family:var(--font-ui);background:var(--bg-base);color:var(--text-prima
   </div>
 </div><!-- /reverse raid -->
 
+<!-- ══ Migration Time Calculator ════════════════════════════════════════════ -->
+<div class="section-sep" style="margin:24px auto 20px;">
+  <div class="sep-line"></div>
+  <div class="sep-label">⏱ Workload Migration Calculator</div>
+  <div class="sep-line"></div>
+</div>
+
+<div class="main">
+  <div class="left-col">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-wrap">
+          <div class="card-icon ci-teal">⏱</div>
+          <div>
+            <div class="card-title">Workload Migration Calculator</div>
+            <div class="card-desc">Estimate time: network transfer + disk conversion + per-VM cutover overhead</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <!-- Row 1: VMs, data size, source, target -->
+        <div style="display:grid;grid-template-columns:130px 1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+          <div class="fg">
+            <label class="fl">Number of VMs</label>
+            <input type="number" class="fi" id="mig-vms" value="4" min="1" step="1" oninput="migCalc()">
+          </div>
+          <div class="fg">
+            <label class="fl">Total Data Size</label>
+            <div style="display:flex;gap:6px;">
+              <input type="number" class="fi" id="mig-size" value="900" min="0.1" step="1" style="flex:1;" oninput="migCalc()">
+              <select class="fs" id="mig-unit" style="width:65px;" onchange="migCalc()">
+                <option value="GB" selected>GB</option>
+                <option value="TB">TB</option>
+              </select>
+            </div>
+          </div>
+          <div class="fg">
+            <label class="fl">Source Platform</label>
+            <select class="fs" id="mig-src" onchange="migCalc()">
+              <option value="vmware" selected>VMware vSphere / ESXi</option>
+              <option value="hyperv">Microsoft Hyper-V</option>
+              <option value="physical">Physical / Bare Metal (P2V)</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label class="fl">Target Platform</label>
+            <select class="fs" id="mig-tgt" onchange="migCalc()">
+              <option value="hyperv" selected>Microsoft Hyper-V</option>
+              <option value="vmware">VMware vSphere / ESXi</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Row 2: Network + Method -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+          <div class="fg">
+            <label class="fl">Network Link</label>
+            <select class="fs" id="mig-net" onchange="migToggleCustom(); migCalc();">
+              <option value="1g">1 Gb Ethernet  (1,000 Mbps · 125 MB/s)</option>
+              <option value="10g" selected>10 Gb Ethernet  (10,000 Mbps · 1,250 MB/s)</option>
+              <option value="25g">25 Gb Ethernet  (25,000 Mbps · 3,125 MB/s)</option>
+              <option value="custom">Custom speed…</option>
+            </select>
+            <div id="mig-custom-wrap" style="display:none;gap:6px;margin-top:6px;">
+              <input type="number" class="fi" id="mig-custom-speed" value="1000" min="1" step="1" style="flex:1;" oninput="migCalc()" placeholder="Speed">
+              <select class="fs" id="mig-custom-unit" style="width:80px;" onchange="migCalc()">
+                <option value="Mbps" selected>Mbps</option>
+                <option value="Gbps">Gbps</option>
+              </select>
+            </div>
+          </div>
+          <div class="fg">
+            <label class="fl">Migration Method</label>
+            <select class="fs" id="mig-method" onchange="migUpdateCompression(); migCalc();">
+              <option value="veeam" selected>Veeam Backup &amp; Replication</option>
+              <option value="live">Live Migration / vMotion</option>
+              <option value="cold">Cold / Offline Copy</option>
+              <option value="v2v">StarWind V2V / Disk Conversion</option>
+            </select>
+            <div id="mig-method-hint" style="font-size:10px;color:var(--text-muted);margin-top:4px;line-height:1.5;"></div>
+          </div>
+        </div>
+
+        <!-- Advanced assumptions panel -->
+        <div style="background:var(--bg-elevated);border-radius:var(--radius-md);padding:14px 16px;">
+          <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:12px;">Assumptions — edit to match your environment</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+            <div class="fg">
+              <label class="fl">Network Efficiency</label>
+              <div class="iw">
+                <input type="number" class="fi" id="mig-efficiency" value="70" min="1" max="100" step="1" oninput="migCalc()">
+                <span class="iu">%</span>
+              </div>
+            </div>
+            <div class="fg" id="mig-compression-wrap">
+              <label class="fl">Veeam Compression</label>
+              <div class="iw">
+                <input type="number" class="fi" id="mig-compression" value="1.5" min="1" max="10" step="0.1" oninput="migCalc()">
+                <span class="iu">:1</span>
+              </div>
+            </div>
+            <div class="fg">
+              <label class="fl">Conv. Rate (GB/min)</label>
+              <input type="number" class="fi" id="mig-conv-rate" value="8" min="0.1" max="100" step="0.5" oninput="migCalc()">
+            </div>
+            <div class="fg">
+              <label class="fl">Overhead / VM (min)</label>
+              <input type="number" class="fi" id="mig-overhead" value="5" min="0" max="120" step="1" oninput="migCalc()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results (same card, below divider) -->
+      <div style="border-top:1px solid var(--border-subtle);padding:20px 24px;">
+        <div id="mig-conv-note" style="display:none;margin-bottom:14px;padding:9px 13px;border-radius:var(--radius-sm);font-size:12px;line-height:1.6;"></div>
+        <div class="raid-grid" style="grid-template-columns:repeat(4,1fr);">
+          <div class="raid-metric">
+            <div class="raid-metric-lbl">Effective Throughput</div>
+            <div id="mig-throughput-mb" class="raid-metric-val" style="color:var(--accent-teal);">—</div>
+            <div id="mig-throughput-gh" class="raid-metric-sub"></div>
+          </div>
+          <div class="raid-metric">
+            <div class="raid-metric-lbl">Data to Transfer</div>
+            <div id="mig-bytes-send" class="raid-metric-val" style="color:var(--text-secondary);">—</div>
+            <div id="mig-bytes-note" class="raid-metric-sub"></div>
+          </div>
+          <div class="raid-metric">
+            <div class="raid-metric-lbl">Transfer Time</div>
+            <div id="mig-transfer-time" class="raid-metric-val" style="color:var(--accent-blue-bright);">—</div>
+            <div id="mig-conv-time-row" class="raid-metric-sub"></div>
+          </div>
+          <div class="raid-metric">
+            <div class="raid-metric-lbl">VM Overhead</div>
+            <div id="mig-overhead-time" class="raid-metric-val" style="color:var(--text-secondary);">—</div>
+            <div id="mig-overhead-sub" class="raid-metric-sub"></div>
+          </div>
+        </div>
+        <!-- Total duration summary -->
+        <div style="margin-top:14px;padding:16px 20px;border-radius:var(--radius-md);background:rgba(6,182,212,0.05);border:1px solid rgba(6,182,212,0.18);display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Total Estimated Duration</div>
+            <div id="mig-breakdown" style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);">—</div>
+          </div>
+          <div id="mig-total" style="font-size:36px;font-weight:700;font-family:var(--font-mono);color:var(--accent-teal);">—</div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /left-col -->
+
+  <!-- Reference sidebar -->
+  <div class="right-col">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-wrap">
+          <div class="card-icon ci-amber">📡</div>
+          <div>
+            <div class="card-title">Reference &amp; Assumptions</div>
+            <div class="card-desc">Throughput benchmarks, conversion needs &amp; method notes</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body" style="padding:16px 20px;">
+        <div class="ref-block">
+          <div class="ref-section-lbl">Network Throughput</div>
+          <table class="raid-ref-table">
+            <thead><tr><th>Link</th><th>Theoretical</th><th>@ 70%</th></tr></thead>
+            <tbody>
+              <tr><td>1 Gb</td><td class="ref-mono">125 MB/s</td><td class="ref-mono ref-amber">87 MB/s</td></tr>
+              <tr><td>10 Gb</td><td class="ref-mono">1,250 MB/s</td><td class="ref-mono ref-green">875 MB/s</td></tr>
+              <tr><td>25 Gb</td><td class="ref-mono">3,125 MB/s</td><td class="ref-mono ref-green">2.19 GB/s</td></tr>
+            </tbody>
+          </table>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:4px;margin-bottom:12px;">70% accounts for TCP/IP overhead, storage I/O, and network contention.</div>
+
+          <div class="ref-section-lbl">Disk Format Conversion</div>
+          <table class="raid-ref-table">
+            <thead><tr><th>Migration Path</th><th>Needed?</th></tr></thead>
+            <tbody>
+              <tr><td>VMware → Hyper-V</td><td style="color:#F87171;font-weight:600;">VMDK → VHDX ✕</td></tr>
+              <tr><td>Hyper-V → VMware</td><td style="color:#F87171;font-weight:600;">VHDX → VMDK ✕</td></tr>
+              <tr><td>VMware → VMware</td><td class="ref-green">No ✓</td></tr>
+              <tr><td>Hyper-V → Hyper-V</td><td class="ref-green">No ✓</td></tr>
+              <tr><td>Physical → Any</td><td style="color:#FCD34D;">P2V tooling</td></tr>
+            </tbody>
+          </table>
+
+          <div style="margin-top:12px;" class="ref-section-lbl">Method Notes</div>
+          <div class="ref-box"><div class="ref-box-title" style="color:#34D399;">Veeam Backup &amp; Replication</div>Cross-hypervisor conversion built-in. Compression reduces bytes on the wire. Incremental resync minimises downtime window.</div>
+          <div class="ref-box"><div class="ref-box-title" style="color:var(--accent-blue-bright);">Live Migration / vMotion</div>Zero-downtime — VM stays running. Requires the same hypervisor on both ends; not for cross-platform moves.</div>
+          <div class="ref-box"><div class="ref-box-title" style="color:var(--text-secondary);">Cold / Offline Copy</div>VMs powered off, files copied directly. Simple and reliable — no compression applied.</div>
+          <div class="ref-box"><div class="ref-box-title" style="color:#A78BFA;">StarWind V2V / Disk Conversion</div>Converts VMDK ↔ VHDX inline. Typically 5–15 GB/min depending on CPU and storage speed.</div>
+
+          <div style="font-size:11px;color:var(--text-muted);line-height:1.6;padding:8px 10px;background:rgba(255,255,255,0.025);border-radius:var(--radius-sm);margin-top:8px;">ℹ️ Straight-line estimates only. Actual times vary with storage I/O speed, CPU headroom, snapshot operations, and network contention.</div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /right-col -->
+</div><!-- /migration -->
+
 <!-- Export / Import bar -->
 <div style="max-width:1440px;margin:0 auto;padding:8px 32px 44px;">
   <div class="calc-row">
     <div>
-      <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Export / Import RAID Results</div>
-      <div class="calc-hint" style="margin-top:3px;">Download a text report, copy to clipboard, or import a previously exported file to restore state.</div>
+      <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Export / Import All Calculators</div>
+      <div class="calc-hint" style="margin-top:3px;">Download a full text report, copy to clipboard, or import a previously exported file to restore all calculator state.</div>
       <div id="import-err" style="display:none;margin-top:7px;font-size:12px;color:#FCA5A5;"></div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
@@ -1757,6 +1957,140 @@ function rvClear() {
 rvLevelChange();
 rvCalc();
 
+// ── Migration Calculator ──────────────────────────────────────────────────────
+
+const MIG_LINE_MBPS = { '1g': 1000, '10g': 10000, '25g': 25000 };
+const MIG_METHOD_LABELS = {
+  veeam: 'Veeam Backup & Replication',
+  live:  'Live Migration / vMotion',
+  cold:  'Cold / Offline Copy',
+  v2v:   'StarWind V2V / Disk Conversion',
+};
+const MIG_NET_LABELS = {
+  '1g':  '1 Gb Ethernet',
+  '10g': '10 Gb Ethernet',
+  '25g': '25 Gb Ethernet',
+};
+
+function migToggleCustom() {
+  const net  = document.getElementById('mig-net').value;
+  const wrap = document.getElementById('mig-custom-wrap');
+  wrap.style.display = net === 'custom' ? 'flex' : 'none';
+}
+
+function migUpdateCompression() {
+  const method = document.getElementById('mig-method').value;
+  const wrap   = document.getElementById('mig-compression-wrap');
+  const inp    = document.getElementById('mig-compression');
+  wrap.style.opacity  = method === 'veeam' ? '1' : '0.4';
+  inp.disabled        = method !== 'veeam';
+  const hints = {
+    veeam: 'Backup + restore across hypervisors. Compression reduces bytes transferred. Incremental resync minimises downtime.',
+    live:  'Zero-downtime, but requires the same hypervisor on both ends. Cross-platform moves need Veeam or V2V.',
+    cold:  'VMs are powered off; disk files copied directly. No compression applied.',
+    v2v:   'Converts VMDK ↔ VHDX inline during transfer. Rate is CPU + storage bound (~5–15 GB/min).',
+  };
+  document.getElementById('mig-method-hint').textContent = hints[method] || '';
+}
+
+function migCalc() {
+  const vmCount    = Math.max(1, parseInt(document.getElementById('mig-vms').value)   || 1);
+  const sizeRaw    = parseFloat(document.getElementById('mig-size').value)             || 0;
+  const unit       = document.getElementById('mig-unit').value;
+  const sizeGB     = unit === 'TB' ? sizeRaw * 1024 : sizeRaw;
+  const sizeMB     = sizeGB * 1024;
+
+  const src        = document.getElementById('mig-src').value;
+  const tgt        = document.getElementById('mig-tgt').value;
+
+  const netVal     = document.getElementById('mig-net').value;
+  let lineMbps;
+  if (netVal === 'custom') {
+    const cs   = parseFloat(document.getElementById('mig-custom-speed').value) || 0;
+    const cu   = document.getElementById('mig-custom-unit').value;
+    lineMbps   = cu === 'Gbps' ? cs * 1000 : cs;
+  } else {
+    lineMbps   = MIG_LINE_MBPS[netVal] || 1000;
+  }
+
+  const method         = document.getElementById('mig-method').value;
+  const efficiency     = Math.min(100, Math.max(1, parseFloat(document.getElementById('mig-efficiency').value)  || 70)) / 100;
+  const compression    = method === 'veeam'
+    ? Math.max(1, parseFloat(document.getElementById('mig-compression').value) || 1.5) : 1.0;
+  const convRateGBmin  = Math.max(0.1, parseFloat(document.getElementById('mig-conv-rate').value) || 8);
+  const overheadMinVM  = Math.max(0,   parseFloat(document.getElementById('mig-overhead').value)  || 5);
+
+  const needsConv  = (src === 'vmware' && tgt === 'hyperv') ||
+                     (src === 'hyperv' && tgt === 'vmware') ||
+                     src === 'physical';
+  const isLive     = method === 'live';
+
+  // Core math
+  const effectiveMBps  = (lineMbps / 8) * efficiency;
+  const sendMB         = sizeMB / compression;
+  const transferSec    = effectiveMBps > 0 ? sendMB / effectiveMBps : Infinity;
+  const convSec        = (needsConv && !isLive) ? (sizeGB / convRateGBmin) * 60 : 0;
+  const overheadSec    = vmCount * overheadMinVM * 60;
+  const totalSec       = transferSec + convSec + overheadSec;
+
+  function fmt(sec) {
+    if (!isFinite(sec) || sec < 0) return '—';
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = Math.floor(sec % 60);
+    if (h > 99) return '> ' + h + ' h';
+    if (h > 0)  return h + ' h ' + (m ? m + ' m' : '');
+    if (m > 0)  return m + ' m ' + (s ? s + ' s' : '');
+    return s + ' s';
+  }
+  function fmtMB(mb) {
+    if (mb >= 1024 * 1024) return (mb / 1024 / 1024).toFixed(1) + ' TB';
+    if (mb >= 1024)        return (mb / 1024).toFixed(0) + ' GB';
+    return mb.toFixed(0) + ' MB';
+  }
+
+  const gbPerHr = effectiveMBps * 3600 / 1024;
+  document.getElementById('mig-throughput-mb').textContent = effectiveMBps.toFixed(0) + ' MB/s';
+  document.getElementById('mig-throughput-gh').textContent = gbPerHr.toFixed(1) + ' GB / hr';
+
+  document.getElementById('mig-bytes-send').textContent = fmtMB(sendMB);
+  document.getElementById('mig-bytes-note').textContent  = compression > 1
+    ? compression.toFixed(1) + ':1 compression  (raw: ' + fmtMB(sizeMB) + ')'
+    : 'no compression';
+
+  document.getElementById('mig-transfer-time').textContent = fmt(transferSec);
+  document.getElementById('mig-conv-time-row').textContent  = needsConv && !isLive && convSec > 0
+    ? '+ conv: ' + fmt(convSec) : '';
+
+  document.getElementById('mig-overhead-time').textContent = fmt(overheadSec);
+  document.getElementById('mig-overhead-sub').textContent  = vmCount + ' VM × ' + overheadMinVM + ' min';
+
+  document.getElementById('mig-total').textContent = isFinite(totalSec) ? fmt(totalSec) : '—';
+
+  const bdParts = [];
+  if (isFinite(transferSec)) bdParts.push('Transfer: ' + fmt(transferSec));
+  if (needsConv && !isLive && convSec > 0) bdParts.push('Conversion: ' + fmt(convSec));
+  if (overheadSec > 0) bdParts.push('Overhead: ' + fmt(overheadSec));
+  document.getElementById('mig-breakdown').textContent = bdParts.join('  +  ') || '—';
+
+  const note = document.getElementById('mig-conv-note');
+  if (isLive && (src !== tgt || src === 'physical')) {
+    note.textContent   = '⚠ Live migration / vMotion requires matching hypervisors on both ends. For cross-platform moves, use Veeam or StarWind V2V instead.';
+    note.style.cssText = 'display:block;margin-bottom:14px;padding:9px 13px;border-radius:var(--radius-sm);font-size:12px;line-height:1.6;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#FCD34D;';
+  } else if (needsConv && !isLive) {
+    const pair = src === 'physical' ? 'P2V conversion required'
+      : src === 'vmware' ? 'VMDK → VHDX conversion required'
+      : 'VHDX → VMDK conversion required';
+    note.textContent   = '🔄 ' + pair + '. Conversion time is included in the total above.';
+    note.style.cssText = 'display:block;margin-bottom:14px;padding:9px 13px;border-radius:var(--radius-sm);font-size:12px;line-height:1.6;background:rgba(6,182,212,0.07);border:1px solid rgba(6,182,212,0.2);color:var(--accent-teal);';
+  } else {
+    note.style.display = 'none';
+  }
+}
+
+migCalc();
+migUpdateCompression();
+
 // ── Export ────────────────────────────────────────────────────────────────────
 function getExportText() {
   const ts = new Date().toLocaleString();
@@ -1883,6 +2217,85 @@ function getExportText() {
   const rNote   = tv('rv-note');
   const rValid  = rDVal !== '—' && rDVal !== '';
 
+  // ── Migration inputs / results (computed inline for export accuracy) ────────
+  const migVMsN    = parseInt(ti('mig-vms'))          || 4;
+  const migSizeN   = parseFloat(ti('mig-size'))        || 0;
+  const migUnitV   = ti('mig-unit')                    || 'GB';
+  const migSrcV    = ti('mig-src')                     || 'vmware';
+  const migTgtV    = ti('mig-tgt')                     || 'hyperv';
+  const migNetV    = ti('mig-net')                     || '10g';
+  const migMethV   = ti('mig-method')                  || 'veeam';
+  const migEffN    = parseFloat(ti('mig-efficiency'))  || 70;
+  const migCompN   = parseFloat(ti('mig-compression')) || 1.5;
+  const migConvRN  = parseFloat(ti('mig-conv-rate'))   || 8;
+  const migOvhdN   = parseFloat(ti('mig-overhead'))    || 5;
+  const migSrcLbl  = tsel('mig-src');
+  const migTgtLbl  = tsel('mig-tgt');
+  let migLineMbps  = MIG_LINE_MBPS[migNetV];
+  if (migNetV === 'custom') {
+    const cs = parseFloat(ti('mig-custom-speed')) || 0;
+    migLineMbps = ti('mig-custom-unit') === 'Gbps' ? cs * 1000 : cs;
+  }
+  const migNetLblExp  = MIG_NET_LABELS[migNetV]
+    || ('Custom (' + ti('mig-custom-speed') + ' ' + (ti('mig-custom-unit') || 'Mbps') + ')');
+  const migMethLblExp = MIG_METHOD_LABELS[migMethV] || migMethV;
+  const migSizeGB  = migUnitV === 'TB' ? migSizeN * 1024 : migSizeN;
+  const migSizeMB  = migSizeGB * 1024;
+  const migEffR    = migEffN / 100;
+  const migCompR   = migMethV === 'veeam' ? Math.max(1, migCompN) : 1.0;
+  const migEffMBps = (migLineMbps / 8) * migEffR;
+  const migSendMB  = migSizeMB / migCompR;
+  const migNeedsConv = (migSrcV === 'vmware' && migTgtV === 'hyperv') ||
+                       (migSrcV === 'hyperv' && migTgtV === 'vmware') || migSrcV === 'physical';
+  const migIsLive  = migMethV === 'live';
+  const migXferSec = migEffMBps > 0 ? migSendMB / migEffMBps : null;
+  const migConvSec = (migNeedsConv && !migIsLive) ? (migSizeGB / migConvRN) * 60 : 0;
+  const migOvhSec  = migVMsN * migOvhdN * 60;
+  const migTotSec  = migXferSec !== null ? migXferSec + migConvSec + migOvhSec : null;
+  function mFmt(sec) {
+    if (sec === null || !isFinite(sec)) return '—';
+    const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60), s = Math.floor(sec%60);
+    if (h > 99) return '> '+h+' h';
+    if (h > 0)  return h+' h '+(m ? m+' m' : '');
+    if (m > 0)  return m+' m '+(s ? s+' s' : '');
+    return s+' s';
+  }
+  function mFmtMB(mb) {
+    if (mb >= 1024*1024) return (mb/1024/1024).toFixed(1)+' TB';
+    if (mb >= 1024)      return (mb/1024).toFixed(0)+' GB';
+    return mb.toFixed(0)+' MB';
+  }
+  const migBd = [];
+  if (migXferSec !== null) migBd.push('Transfer: '+mFmt(migXferSec));
+  if (migNeedsConv && !migIsLive && migConvSec > 0) migBd.push('Conversion: '+mFmt(migConvSec));
+  if (migOvhSec > 0) migBd.push('Overhead: '+mFmt(migOvhSec));
+  const migSection = [
+    '  WORKLOAD MIGRATION CALCULATOR',
+    D,
+    '  INPUTS',
+    row('  VMs:', String(migVMsN)),
+    row('  Total Data:', migSizeN + ' ' + migUnitV),
+    row('  Source Platform:', migSrcLbl),
+    row('  Target Platform:', migTgtLbl),
+    row('  Network Link:', migNetLblExp + '  (' + (migLineMbps||0).toLocaleString() + ' Mbps)'),
+    row('  Migration Method:', migMethLblExp),
+    row('  Network Efficiency:', migEffN + '%'),
+    migMethV === 'veeam' ? row('  Compression Ratio:', migCompN + ':1') : null,
+    row('  Conv. Rate:', migConvRN + ' GB/min'),
+    row('  Overhead / VM:', migOvhdN + ' min'),
+    '',
+    '  RESULTS',
+    row('  Effective Throughput:', migEffMBps.toFixed(0)+' MB/s  ('+(migEffMBps*3600/1024).toFixed(1)+' GB/hr)'),
+    row('  Data to Transfer:', mFmtMB(migSendMB) + (migCompR > 1 ? '  ('+migCompR.toFixed(1)+':1 from '+mFmtMB(migSizeMB)+')' : '')),
+    row('  Transfer Time:', mFmt(migXferSec)),
+    migNeedsConv && !migIsLive && migConvSec > 0
+      ? row('  Conversion Time:', mFmt(migConvSec)+'  ('+migSizeGB.toFixed(0)+' GB ÷ '+migConvRN+' GB/min)') : null,
+    row('  VM Overhead:', mFmt(migOvhSec)+'  ('+migVMsN+' VMs × '+migOvhdN+' min)'),
+    '',
+    '  TOTAL ESTIMATED DURATION:   ' + (migTotSec !== null ? mFmt(migTotSec) : '—'),
+    row('  Breakdown:', migBd.join('  +  ') || '—'),
+  ].filter(Boolean);
+
   const lines = [
     L,
     '  SERVER REFRESH & RAID CALCULATOR — EXPORT REPORT',
@@ -1954,11 +2367,15 @@ function getExportText() {
     rValid && rNote ? row('  Note:', rNote) : null,
     '',
     L,
+    '',
+    ...migSection,
+    '',
+    L,
   ].filter(l => l !== null).join('\n');
 
-  // Machine-readable block — v2 includes server/VM state
+  // Machine-readable block — v3 adds migration calculator state
   const data = {
-    v: 2,
+    v: 3,
     vmHw: {
       name:       document.getElementById('hw-name').value,
       sockets:    hwSockN,
@@ -1980,6 +2397,21 @@ function getExportText() {
     rvMode:      rvMode,
     rvKnown:     parseFloat(ti('rv-known'))  || 0,
     rvKnownUnit: rvMode === 'size' ? null : ti('rv-known-unit'),
+    mig: {
+      vms:         migVMsN,
+      size:        migSizeN,
+      unit:        migUnitV,
+      src:         migSrcV,
+      tgt:         migTgtV,
+      net:         migNetV,
+      customSpeed: parseFloat(ti('mig-custom-speed')) || 1000,
+      customUnit:  ti('mig-custom-unit') || 'Mbps',
+      method:      migMethV,
+      efficiency:  migEffN,
+      compression: migCompN,
+      convRate:    migConvRN,
+      overhead:    migOvhdN,
+    },
   };
 
   return lines + '\n===CALC-DATA===\n' + JSON.stringify(data) + '\n===END-DATA===\n';
@@ -1991,7 +2423,7 @@ function raidExportTxt() {
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href     = url;
-  a.download = 'raid-calc-' + new Date().toISOString().slice(0, 10) + '.txt';
+  a.download = 'server-calc-' + new Date().toISOString().slice(0, 10) + '.txt';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -2086,6 +2518,27 @@ function raidApplyImport(d) {
   if (d.rvKnownUnit && d.rvMode !== 'size')
     document.getElementById('rv-known-unit').value = d.rvKnownUnit;
   rvSetMode(d.rvMode || 'count');
+
+  // ── Migration calculator ──────────────────────────────────────────────────
+  if (d.mig) {
+    const m = d.mig;
+    if (m.vms         != null) document.getElementById('mig-vms').value          = m.vms;
+    if (m.size        != null) document.getElementById('mig-size').value         = m.size;
+    if (m.unit        != null) document.getElementById('mig-unit').value         = m.unit;
+    if (m.src         != null) document.getElementById('mig-src').value          = m.src;
+    if (m.tgt         != null) document.getElementById('mig-tgt').value          = m.tgt;
+    if (m.net         != null) document.getElementById('mig-net').value          = m.net;
+    if (m.customSpeed != null) document.getElementById('mig-custom-speed').value = m.customSpeed;
+    if (m.customUnit  != null) document.getElementById('mig-custom-unit').value  = m.customUnit;
+    if (m.method      != null) document.getElementById('mig-method').value       = m.method;
+    if (m.efficiency  != null) document.getElementById('mig-efficiency').value   = m.efficiency;
+    if (m.compression != null) document.getElementById('mig-compression').value  = m.compression;
+    if (m.convRate    != null) document.getElementById('mig-conv-rate').value    = m.convRate;
+    if (m.overhead    != null) document.getElementById('mig-overhead').value     = m.overhead;
+    migToggleCustom();
+    migUpdateCompression();
+    migCalc();
+  }
 }
 
 function showImportErr(msg) {
