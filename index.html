@@ -707,6 +707,101 @@ body{font-family:var(--font-ui);background:var(--bg-base);color:var(--text-prima
 
 </div><!-- /raid main -->
 
+<!-- ══ Reverse RAID Calculator ══════════════════════════════════════════════ -->
+<div class="section-sep" style="margin:24px auto 20px;">
+  <div class="sep-line"></div>
+  <div class="sep-label">🎯 Target Capacity Planner</div>
+  <div class="sep-line"></div>
+</div>
+
+<div class="main" style="grid-template-columns:1fr;">
+  <div class="left-col">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-wrap">
+          <div class="card-icon ci-purple">🎯</div>
+          <div>
+            <div class="card-title">Reverse RAID Calculator</div>
+            <div class="card-desc">Enter a target usable capacity — find how many disks (or what size) you need</div>
+          </div>
+        </div>
+        <div id="rv-level-badge"></div>
+      </div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+          <div class="fg">
+            <label class="fl">Target Usable Capacity</label>
+            <div style="display:flex;gap:6px;">
+              <input type="number" class="fi" id="rv-target" value="12" min="0.01" step="0.1" style="flex:1;" oninput="rvCalc()">
+              <select class="fs" id="rv-unit" style="width:70px;" onchange="rvCalc()">
+                <option value="TB">TB</option>
+                <option value="GB">GB</option>
+              </select>
+            </div>
+          </div>
+          <div class="fg">
+            <label class="fl">RAID Level</label>
+            <select class="fs" id="rv-level" onchange="rvLevelChange()">
+              <option value="0">RAID 0 — Striping</option>
+              <option value="1">RAID 1 — Mirroring</option>
+              <option value="5" selected>RAID 5 — Stripe + Parity</option>
+              <option value="6">RAID 6 — Dual Parity</option>
+              <option value="10">RAID 10 — Stripe of Mirrors</option>
+              <option value="jbod">JBOD — Just a Bunch of Disks</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label class="fl">Solve For</label>
+            <div style="display:flex;border:1px solid var(--border-subtle);border-radius:var(--radius-sm);overflow:hidden;height:34px;">
+              <button id="rv-btn-count" onclick="rvSetMode('count')" style="flex:1;padding:0 8px;font-size:12px;font-weight:600;font-family:var(--font-ui);background:rgba(59,130,246,0.18);color:var(--accent-blue-bright);border:none;border-right:1px solid var(--border-subtle);cursor:pointer;transition:all 0.15s;">Disk Count</button>
+              <button id="rv-btn-size"  onclick="rvSetMode('size')"  style="flex:1;padding:0 8px;font-size:12px;font-weight:600;font-family:var(--font-ui);background:transparent;color:var(--text-muted);border:none;cursor:pointer;transition:all 0.15s;">Disk Size</button>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:220px 1fr;gap:12px;align-items:start;">
+          <div class="fg">
+            <label class="fl" id="rv-known-label">Disk Size (known)</label>
+            <div style="display:flex;gap:6px;">
+              <input type="number" class="fi" id="rv-known" value="4" min="0.01" step="0.1" style="flex:1;" oninput="rvCalc()">
+              <select class="fs" id="rv-known-unit" style="width:70px;" onchange="rvCalc()">
+                <option value="TB">TB</option>
+                <option value="GB">GB</option>
+              </select>
+            </div>
+          </div>
+          <div id="rv-validation" style="padding-top:22px;"></div>
+        </div>
+      </div>
+      <!-- Results -->
+      <div style="border-top:1px solid var(--border-subtle);padding:20px 24px;">
+        <div class="raid-grid">
+          <div class="raid-metric">
+            <div class="raid-metric-lbl" id="rv-disks-lbl">Disks Needed</div>
+            <div id="rv-disks-val" class="raid-metric-val" style="color:var(--accent-blue-bright);">—</div>
+            <div id="rv-disks-sub" class="raid-metric-sub"></div>
+          </div>
+          <div class="raid-metric">
+            <div class="raid-metric-lbl">Actual Usable</div>
+            <div id="rv-usable-val" class="raid-metric-val" style="color:var(--accent-green);">—</div>
+            <div id="rv-usable-sub" class="raid-metric-sub"></div>
+          </div>
+          <div class="raid-metric">
+            <div class="raid-metric-lbl">Raw Capacity</div>
+            <div id="rv-raw-val" class="raid-metric-val" style="color:var(--text-secondary);">—</div>
+            <div id="rv-raw-sub" class="raid-metric-sub"></div>
+          </div>
+          <div class="raid-metric">
+            <div class="raid-metric-lbl">Fault Tolerance</div>
+            <div id="rv-fault-val" class="raid-metric-val">—</div>
+            <div id="rv-fault-sub" class="raid-metric-sub"></div>
+          </div>
+        </div>
+        <div id="rv-note" style="margin-top:12px;font-size:11px;color:var(--text-muted);line-height:1.6;min-height:16px;"></div>
+      </div>
+    </div>
+  </div>
+</div><!-- /reverse raid -->
+
 <script>
 // ── Data ──────────────────────────────────────────────────────────────────────
 const OS_OPTS = [
@@ -1462,6 +1557,188 @@ function raidClear() {
 }
 
 raidCalc();
+
+// ── Reverse RAID Calculator ───────────────────────────────────────────────────
+let rvMode = 'count'; // 'count' = solve for disk count | 'size' = solve for disk size
+
+function rvSetMode(mode) {
+  rvMode = mode;
+  const btnC = document.getElementById('rv-btn-count');
+  const btnS = document.getElementById('rv-btn-size');
+  btnC.style.background = mode === 'count' ? 'rgba(59,130,246,0.18)' : 'transparent';
+  btnC.style.color      = mode === 'count' ? 'var(--accent-blue-bright)' : 'var(--text-muted)';
+  btnS.style.background = mode === 'size'  ? 'rgba(59,130,246,0.18)' : 'transparent';
+  btnS.style.color      = mode === 'size'  ? 'var(--accent-blue-bright)' : 'var(--text-muted)';
+
+  const knownInput = document.getElementById('rv-known');
+  const knownUnit  = document.getElementById('rv-known-unit');
+  document.getElementById('rv-known-label').textContent =
+    mode === 'count' ? 'Disk Size (known)' : 'Number of Disks (known)';
+
+  if (mode === 'size') {
+    knownInput.step  = '1';
+    knownInput.min   = '1';
+    knownInput.value = Math.max(1, Math.round(parseFloat(knownInput.value) || 4));
+    knownUnit.style.display = 'none';
+  } else {
+    knownInput.step = '0.1';
+    knownInput.min  = '0.01';
+    knownUnit.style.display = '';
+  }
+  rvCalc();
+}
+
+function rvLevelChange() {
+  const level    = document.getElementById('rv-level').value;
+  const tagClass = level === 'jbod' ? 'rlt-jbod' : 'rlt-' + level;
+  const tagLabel = level === 'jbod' ? 'JBOD' : 'RAID ' + level;
+  document.getElementById('rv-level-badge').innerHTML =
+    `<span class="raid-level-tag ${tagClass}">${tagLabel}</span>`;
+  rvCalc();
+}
+
+function rvCalc() {
+  const target     = parseFloat(document.getElementById('rv-target').value) || 0;
+  const targetUnit = document.getElementById('rv-unit').value;
+  const level      = document.getElementById('rv-level').value;
+  const known      = parseFloat(document.getElementById('rv-known').value)  || 0;
+  const knownUnit  = document.getElementById('rv-known-unit').value;
+  const valEl      = document.getElementById('rv-validation');
+  const noteEl     = document.getElementById('rv-note');
+
+  const tagClass = level === 'jbod' ? 'rlt-jbod' : 'rlt-' + level;
+  const tagLabel = level === 'jbod' ? 'JBOD' : 'RAID ' + level;
+  document.getElementById('rv-level-badge').innerHTML =
+    `<span class="raid-level-tag ${tagClass}">${tagLabel}</span>`;
+
+  if (target <= 0 || known <= 0) { valEl.innerHTML = ''; noteEl.textContent = ''; rvClear(); return; }
+
+  // Normalise to TB for all arithmetic
+  const targetTB = targetUnit === 'TB' ? target : target / 1024;
+  const knownTB  = knownUnit  === 'TB' ? known  : known  / 1024;
+
+  let N, diskTB, usableTB, rawTB, faultDisks, faultDesc, noteText = '', errText = '';
+
+  if (rvMode === 'count') {
+    // ── Solve for number of disks given disk size ────────────────────────────
+    diskTB = knownTB;
+
+    switch (level) {
+      case 'jbod':
+        N = Math.max(1, Math.ceil(targetTB / diskTB));
+        break;
+      case '0':
+        N = Math.max(2, Math.ceil(targetTB / diskTB));
+        break;
+      case '1':
+        if (diskTB < targetTB) {
+          errText = `RAID 1 usable capacity equals one disk's size (${raidFmt(diskTB,'TB',false)}). ` +
+            `Target (${raidFmt(targetTB,'TB',false)}) exceeds that — use larger disks or a different RAID level.`;
+        } else {
+          N = 2; // minimum 2-disk mirror; more disks still give same usable
+        }
+        break;
+      case '5':
+        N = Math.max(3, Math.ceil(targetTB / diskTB) + 1);
+        break;
+      case '6':
+        N = Math.max(4, Math.ceil(targetTB / diskTB) + 2);
+        break;
+      case '10': {
+        let n = Math.ceil((targetTB / diskTB) * 2);
+        if (n % 2 !== 0) n++;
+        N = Math.max(4, n);
+        break;
+      }
+    }
+
+    if (errText) {
+      valEl.innerHTML = `<div class="raid-alert-err">⚠ ${errText}</div>`;
+      rvClear(); return;
+    }
+    valEl.innerHTML = '';
+
+    rawTB = N * diskTB;
+    switch (level) {
+      case 'jbod': case '0': usableTB = rawTB;              faultDisks = 0; faultDesc = 'No redundancy'; break;
+      case '1':              usableTB = diskTB;              faultDisks = N-1; faultDesc = `${N-1} disk${N-1!==1?'s':''}`; break;
+      case '5':              usableTB = (N-1) * diskTB;      faultDisks = 1; faultDesc = '1 disk'; break;
+      case '6':              usableTB = (N-2) * diskTB;      faultDisks = 2; faultDesc = '2 disks'; break;
+      case '10':             usableTB = (N/2) * diskTB;      faultDisks = 1; faultDesc = `1+ per pair (up to ${N/2})`; break;
+    }
+
+    document.getElementById('rv-disks-lbl').textContent   = 'Disks Needed';
+    document.getElementById('rv-disks-val').innerHTML      = `<span style="color:var(--accent-blue-bright);">${N}</span>`;
+    document.getElementById('rv-disks-sub').textContent    = `${N} × ${raidFmt(diskTB,'TB',false)} each`;
+
+    if (usableTB > targetTB * 1.0001)
+      noteText = `Actual usable (${raidFmt(usableTB,'TB',false)}) slightly exceeds target (${raidFmt(targetTB,'TB',false)}) because disk count was rounded up to meet ${tagLabel} constraints.`;
+
+  } else {
+    // ── Solve for minimum disk size given disk count ──────────────────────────
+    N = Math.max(1, Math.round(known));
+
+    const errs = [];
+    if (N < RAID_RULES[level].minDisks)
+      errs.push(`${tagLabel} requires at least ${RAID_RULES[level].minDisks} disks (you entered ${N}).`);
+    if (level === '10' && N % 2 !== 0)
+      errs.push(`RAID 10 requires an even disk count (${N} is odd — try ${N+1}).`);
+    if (errs.length) {
+      valEl.innerHTML = `<div class="raid-alert-err">⚠ ${errs.join(' ')}</div>`;
+      rvClear(); return;
+    }
+    valEl.innerHTML = '';
+
+    switch (level) {
+      case 'jbod': case '0': diskTB = targetTB / N;          break;
+      case '1':              diskTB = targetTB;               break;
+      case '5':              diskTB = targetTB / (N - 1);     break;
+      case '6':              diskTB = targetTB / (N - 2);     break;
+      case '10':             diskTB = targetTB / (N / 2);     break;
+    }
+
+    usableTB = targetTB; // exact by construction
+    rawTB    = N * diskTB;
+
+    switch (level) {
+      case 'jbod': case '0': faultDisks = 0; faultDesc = 'No redundancy'; break;
+      case '1':              faultDisks = N-1; faultDesc = `${N-1} disk${N-1!==1?'s':''}`; break;
+      case '5':              faultDisks = 1; faultDesc = '1 disk'; break;
+      case '6':              faultDisks = 2; faultDesc = '2 disks'; break;
+      case '10':             faultDisks = 1; faultDesc = `1+ per pair (up to ${N/2})`; break;
+    }
+
+    document.getElementById('rv-disks-lbl').textContent   = 'Min. Disk Size';
+    document.getElementById('rv-disks-val').innerHTML      = raidFmt(diskTB, 'TB', true);
+    document.getElementById('rv-disks-val').style.color    = 'var(--accent-blue-bright)';
+    document.getElementById('rv-disks-sub').textContent    = `minimum, across ${N} disk${N!==1?'s':''}`;
+    noteText = `Round up to the nearest standard drive size when purchasing — actual usable will be slightly higher.`;
+  }
+
+  const faultColor = faultDisks >= 2 ? 'var(--accent-green)' : faultDisks === 1 ? 'var(--accent-amber)' : 'var(--accent-red)';
+  const eff = Math.round((usableTB / rawTB) * 100);
+
+  document.getElementById('rv-usable-val').innerHTML    = raidFmt(usableTB, 'TB', true);
+  document.getElementById('rv-usable-sub').textContent  = `target: ${raidFmt(targetTB,'TB',false)}`;
+  document.getElementById('rv-raw-val').innerHTML       = raidFmt(rawTB, 'TB', true);
+  document.getElementById('rv-raw-sub').textContent     = `${eff}% efficiency`;
+  document.getElementById('rv-fault-val').innerHTML     = `<span style="color:${faultColor};">${faultDisks}</span>`;
+  document.getElementById('rv-fault-sub').textContent   = faultDesc;
+  noteEl.textContent = noteText;
+}
+
+function rvClear() {
+  ['rv-usable-val','rv-raw-val','rv-fault-val'].forEach(id => {
+    document.getElementById(id).innerHTML = '—';
+  });
+  ['rv-usable-sub','rv-raw-sub','rv-fault-sub','rv-disks-sub'].forEach(id => {
+    document.getElementById(id).textContent = '';
+  });
+  document.getElementById('rv-disks-val').innerHTML = '—';
+}
+
+rvLevelChange();
+rvCalc();
 </script>
 </body>
 </html>
