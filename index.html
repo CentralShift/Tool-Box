@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My Environment</title>
+<title>MSP Toolbox</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -290,21 +290,96 @@ body{font-family:var(--font-ui);background:var(--bg-base);color:var(--text-prima
 .raid-ref-table td{padding:7px 10px;border-bottom:1px solid var(--border-subtle);color:var(--text-secondary);vertical-align:middle;}
 .raid-ref-table tr:last-child td{border-bottom:none;}
 .raid-ref-table tr:nth-child(even) td{background:rgba(255,255,255,0.015);}
+
+/* ── Tabs ──────────────────────────────────────────────────────────────────── */
+.tab-bar{display:flex;padding:0 32px;border-top:1px solid var(--border-subtle);background:rgba(255,255,255,0.02);}
+.tab-btn{padding:11px 18px 10px;background:transparent;border:none;border-bottom:3px solid transparent;color:var(--text-muted);font-family:var(--font-ui);font-size:13px;font-weight:600;cursor:pointer;transition:color 0.15s,border-color 0.15s;white-space:nowrap;outline:none;margin-bottom:-1px;}
+.tab-btn:hover{color:var(--text-secondary);}
+.tab-btn:focus-visible{outline:2px solid var(--accent-blue);outline-offset:-2px;}
+.tab-btn.active{color:var(--accent-blue-bright);border-bottom-color:var(--accent-blue-bright);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* ── Header actions ────────────────────────────────────────────────────────── */
+.header-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.theme-toggle{width:32px;height:32px;background:rgba(255,255,255,0.06);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background 0.15s;}
+.theme-toggle:hover{background:rgba(255,255,255,0.14);}
+
+/* ── Sticky right sidebar ─────────────────────────────────────────────────── */
+@media(min-width:1101px){
+  .right-col{position:sticky;top:128px;align-self:start;max-height:calc(100vh - 144px);overflow-y:auto;scrollbar-width:thin;}
+}
+
+/* ── Light theme ────────────────────────────────────────────────────────────── */
+[data-theme="light"]{
+  --bg-base:#EEF2FA;--bg-surface:#FFFFFF;--bg-elevated:#E2EAF6;--bg-card:#FFFFFF;--bg-input:#EEF2FA;
+  --border-subtle:rgba(30,90,200,0.12);--border-default:rgba(30,90,200,0.25);--border-active:rgba(30,90,200,0.5);
+  --text-primary:#0F172A;--text-secondary:#334155;--text-muted:#64748B;--text-code:#1D4ED8;
+  --shadow-card:0 2px 10px rgba(0,0,0,0.07),0 1px 2px rgba(0,0,0,0.04);
+  --shadow-glow-green:0 0 10px rgba(16,185,129,0.06);--shadow-glow-amber:0 0 10px rgba(245,158,11,0.06);
+}
+[data-theme="light"] body{background:var(--bg-base);}
+[data-theme="light"] .app-header{background:linear-gradient(135deg,#FFFFFF 0%,#F1F7FF 100%);border-bottom-color:var(--border-default);}
+[data-theme="light"] .fi,[data-theme="light"] .fs,[data-theme="light"] .vm-name-input{color:#0F172A;background:var(--bg-input);}
+[data-theme="light"] .fs option{background:#FFFFFF;color:#0F172A;}
+[data-theme="light"] .btn-secondary{color:var(--text-secondary);border-color:var(--border-default);}
+[data-theme="light"] .btn-secondary:hover{color:var(--text-primary);}
+[data-theme="light"] .theme-toggle{background:rgba(0,0,0,0.04);border-color:var(--border-default);}
+[data-theme="light"] .header-badge{color:#1D4ED8;background:rgba(59,130,246,0.08);}
+[data-theme="light"] #tt{background:#FFFFFF;color:#334155;border-color:var(--border-default);}
+[data-theme="light"] .tab-bar{background:rgba(0,0,0,0.02);}
+
+/* ── Tighter VM group spacing ───────────────────────────────────────────────── */
+.vm-group-head{padding:8px 14px;}
+.vm-group-body{padding:10px 14px;gap:8px;}
+
+/* ── Mobile pass ────────────────────────────────────────────────────────────── */
+@media(max-width:760px){
+  .app-header{flex-wrap:wrap;gap:8px;}
+  .header-actions .btn-sm{padding:5px 9px;font-size:11px;}
+  .tab-bar{padding:0 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .tab-bar::-webkit-scrollbar{display:none;}
+  .tab-btn{padding:9px 14px;font-size:12px;}
+  .main{padding:12px;}
+  .section-sep{padding:0 12px;}
+}
+@media(max-width:480px){
+  .stats-grid{grid-template-columns:1fr 1fr;}
+  .rec-body{grid-template-columns:1fr;}
+  .raid-grid{grid-template-columns:1fr 1fr;}
+}
 </style>
 </head>
 <body>
 
-<header class="app-header">
-  <div class="logo-wrap">
-    <div class="logo-icon">🖥️</div>
-    <div>
-      <div class="app-title">My Environment</div>
-      <div class="app-sub">VM Migration &amp; Hardware Sizing</div>
+<header class="app-header" style="flex-direction:column;padding:0;gap:0;align-items:stretch;">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 32px;">
+    <div class="logo-wrap">
+      <div class="logo-icon">🧰</div>
+      <div>
+        <div class="app-title">MSP Toolbox</div>
+        <div class="app-sub">My Environment</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle light / dark mode">🌙</button>
+      <input type="file" id="import-file" accept=".txt" style="display:none;" onchange="raidHandleImport(event)">
+      <button class="btn btn-secondary btn-sm" onclick="raidImport()">📂 Import</button>
+      <button class="btn btn-secondary btn-sm" id="raid-copy-btn" onclick="raidCopyClipboard()">📋 Copy</button>
+      <button class="btn btn-primary btn-sm" onclick="raidExportTxt()">⬇ .txt</button>
     </div>
   </div>
-  <div class="header-badge">v1.0 · 2026</div>
+  <nav class="tab-bar" role="tablist">
+    <button class="tab-btn active" data-tab="environment" onclick="switchTab('environment')" role="tab">🖥 Environment</button>
+    <button class="tab-btn" data-tab="storage" onclick="switchTab('storage')" role="tab">💾 Storage / RAID</button>
+    <button class="tab-btn" data-tab="migration" onclick="switchTab('migration')" role="tab">⏱ Migration</button>
+    <button class="tab-btn" data-tab="network" onclick="switchTab('network')" role="tab">🌐 Network</button>
+  </nav>
 </header>
+<div id="import-err" style="display:none;background:rgba(239,68,68,0.08);border-bottom:1px solid rgba(239,68,68,0.2);color:#FCA5A5;font-size:12px;padding:8px 32px;"></div>
 
+
+<div id="tab-environment" class="tab-panel active">
 <div class="main">
 
   <!-- LEFT COLUMN -->
@@ -554,7 +629,9 @@ body{font-family:var(--font-ui);background:var(--bg-base);color:var(--text-prima
 
   </div><!-- /right-col -->
 </div><!-- /main -->
+</div><!-- /tab-environment -->
 
+<div id="tab-storage" class="tab-panel">
 <!-- ══ RAID Calculator ══════════════════════════════════════════════════════ -->
 <div class="section-sep" style="margin:32px auto 24px;">
   <div class="sep-line"></div>
@@ -801,7 +878,9 @@ body{font-family:var(--font-ui);background:var(--bg-base);color:var(--text-prima
     </div>
   </div>
 </div><!-- /reverse raid -->
+</div><!-- /tab-storage -->
 
+<div id="tab-migration" class="tab-panel">
 <!-- ══ Migration Time Calculator ════════════════════════════════════════════ -->
 <div class="section-sep" style="margin:24px auto 20px;">
   <div class="sep-line"></div>
@@ -1001,23 +1080,15 @@ body{font-family:var(--font-ui);background:var(--bg-base);color:var(--text-prima
     </div>
   </div><!-- /right-col -->
 </div><!-- /migration -->
+</div><!-- /tab-migration -->
 
-<!-- Export / Import bar -->
-<div style="max-width:1440px;margin:0 auto;padding:8px 32px 44px;">
-  <div class="calc-row">
-    <div>
-      <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Export / Import All Calculators</div>
-      <div class="calc-hint" style="margin-top:3px;">Download a full text report, copy to clipboard, or import a previously exported file to restore all calculator state.</div>
-      <div id="import-err" style="display:none;margin-top:7px;font-size:12px;color:#FCA5A5;"></div>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <input type="file" id="import-file" accept=".txt" style="display:none;" onchange="raidHandleImport(event)">
-      <button class="btn btn-secondary" onclick="raidImport()">📂 Import .txt</button>
-      <button class="btn btn-secondary" id="raid-copy-btn" onclick="raidCopyClipboard()">📋 Copy to Clipboard</button>
-      <button class="btn btn-primary" onclick="raidExportTxt()">⬇ Download .txt</button>
-    </div>
+<div id="tab-network" class="tab-panel">
+  <div style="max-width:1440px;margin:0 auto;padding:80px 32px;text-align:center;">
+    <div style="font-size:32px;margin-bottom:16px;">🌐</div>
+    <div style="font-size:18px;font-weight:700;color:var(--text-primary);margin-bottom:8px;">Network Tools</div>
+    <div style="font-size:14px;color:var(--text-muted);">IP / Subnet Calculator, VLAN Planner, and DNS Checker — coming in the next update.</div>
   </div>
-</div>
+</div><!-- /tab-network -->
 
 <script>
 // ── Data ──────────────────────────────────────────────────────────────────────
@@ -2545,6 +2616,24 @@ function showImportErr(msg) {
   const el = document.getElementById('import-err');
   el.textContent    = msg;
   el.style.display  = msg ? 'block' : 'none';
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const panel = document.getElementById('tab-' + name);
+  if (panel) panel.classList.add('active');
+  const btn = document.querySelector('[data-tab="' + name + '"]');
+  if (btn) btn.classList.add('active');
+}
+
+// ── Theme toggle ──────────────────────────────────────────────────────────────
+let _themeLight = false;
+function toggleTheme() {
+  _themeLight = !_themeLight;
+  document.documentElement.setAttribute('data-theme', _themeLight ? 'light' : 'dark');
+  document.getElementById('theme-toggle-btn').textContent = _themeLight ? '☀️' : '🌙';
 }
 </script>
 </body>
