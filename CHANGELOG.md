@@ -11,6 +11,12 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
+## 2026-06-24 — Claude — Pipeline test from new canonical folder
+
+- Verified commit + push + GitHub Pages deploy works from `C:\Users\Admin\Documents\Claude\Projects\Centralshift ToolBox`
+
+---
+
 ## 2026-06-23 18:00 — Claude — Initial MSP Toolbox build (Phases 1–3)
 
 - Single-file app (`index.html`) deployed to GitHub Pages at centralshift.github.io/Tool-Box
