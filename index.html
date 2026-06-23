@@ -6,6 +6,7 @@
 <title>MSP Toolbox</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root {
   --bg-base: #080D1A;
@@ -367,6 +368,7 @@ body{font-family:var(--font-ui);background:var(--bg-base);color:var(--text-prima
       <button class="btn btn-secondary btn-sm" onclick="raidImport()">📂 Import</button>
       <button class="btn btn-secondary btn-sm" id="raid-copy-btn" onclick="raidCopyClipboard()">📋 Copy</button>
       <button class="btn btn-primary btn-sm" onclick="raidExportTxt()">⬇ .txt</button>
+      <button class="btn btn-primary btn-sm" onclick="exportPDF()">📄 PDF</button>
     </div>
   </div>
   <nav class="tab-bar" role="tablist">
@@ -2634,6 +2636,90 @@ function toggleTheme() {
   _themeLight = !_themeLight;
   document.documentElement.setAttribute('data-theme', _themeLight ? 'light' : 'dark');
   document.getElementById('theme-toggle-btn').textContent = _themeLight ? '☀️' : '🌙';
+}
+
+function exportPDF() {
+  if (typeof window.jspdf === 'undefined') {
+    alert('PDF library not loaded yet — please wait a moment and try again.');
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+
+  // Reuse text export content; strip machine-readable block; replace box-drawing chars
+  const lines = getExportText()
+    .split('\n===CALC-DATA===')[0]
+    .split('\n')
+    .map(l => l.replace(/═/g, '=').replace(/─/g, '-'));
+
+  const doc   = new jsPDF({ unit: 'mm', format: 'a4' });
+  const W     = 210, ML = 13, USABLE = 184;
+  const LH    = 3.7;
+  let y       = 28;
+
+  // Title bar
+  doc.setFillColor(15, 23, 42);
+  doc.rect(0, 0, W, 22, 'F');
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
+  doc.setTextColor(235, 242, 255);
+  doc.text('MSP Toolbox  -  Export Report', ML, 11);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+  doc.setTextColor(140, 158, 195);
+  doc.text('Generated ' + new Date().toLocaleString() + '   centralshift.github.io/Tool-Box', ML, 17.5);
+
+  doc.setFont('courier', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(25, 35, 55);
+
+  for (const raw of lines) {
+    if (y > 282) {
+      doc.addPage(); y = 10;
+      doc.setFont('courier', 'normal'); doc.setFontSize(7.5); doc.setTextColor(25, 35, 55);
+    }
+
+    // Long runs of = or - -> draw a horizontal rule
+    if (/^ *[=\-]{20,}/.test(raw)) {
+      doc.setDrawColor(80, 110, 180);
+      doc.setLineWidth(raw.trimStart().startsWith('=') ? 0.3 : 0.1);
+      doc.line(ML, y - 0.5, ML + USABLE, y - 0.5);
+      y += 2.5;
+      continue;
+    }
+
+    // All-caps words (≥4 chars, no colon) -> section heading style
+    const tr = raw.trim();
+    if (tr.length >= 4 && /^[A-Z][A-Z0-9 \/()\-&.]+$/.test(tr)) {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+      doc.setTextColor(59, 130, 246);
+      doc.text(tr, ML, y + 1);
+      doc.setFont('courier', 'normal'); doc.setFontSize(7.5); doc.setTextColor(25, 35, 55);
+      y += LH + 2;
+      continue;
+    }
+
+    const wrapped = doc.splitTextToSize(raw, USABLE);
+    for (const wl of wrapped) {
+      if (y > 282) {
+        doc.addPage(); y = 10;
+        doc.setFont('courier', 'normal'); doc.setFontSize(7.5); doc.setTextColor(25, 35, 55);
+      }
+      doc.text(wl, ML, y);
+      y += LH;
+    }
+  }
+
+  // Footer on every page
+  const total = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= total; p++) {
+    doc.setPage(p);
+    doc.setFillColor(20, 28, 50);
+    doc.rect(0, 287, W, 10, 'F');
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5);
+    doc.setTextColor(140, 158, 195);
+    doc.text('MSP Toolbox  centralshift.github.io/Tool-Box', ML, 292.5);
+    doc.text(p + ' / ' + total, W - ML, 292.5, { align: 'right' });
+  }
+
+  doc.save('tool-box-report-' + new Date().toISOString().slice(0, 10) + '.pdf');
 }
 </script>
 </body>
