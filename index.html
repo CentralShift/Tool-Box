@@ -349,6 +349,35 @@ body{font-family:var(--font-ui);background:var(--bg-base);color:var(--text-prima
   .rec-body{grid-template-columns:1fr;}
   .raid-grid{grid-template-columns:1fr 1fr;}
 }
+/* ── Network tools ──────────────────────────────────────────────────────── */
+.net-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+.net-full{grid-column:1/-1;}
+@media(max-width:900px){.net-grid{grid-template-columns:1fr;}}
+.net-result-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;margin-top:16px;}
+@media(max-width:560px){.net-result-grid{grid-template-columns:1fr;}}
+.net-kv{display:flex;flex-direction:column;gap:3px;padding:8px 0;border-bottom:1px solid var(--border-subtle);}
+.net-kv:last-child{border-bottom:none;}
+.net-kv-label{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;}
+.net-kv-val{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--text-primary);word-break:break-all;}
+.vlan-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px;}
+.vlan-table th{text-align:left;font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 8px 6px 4px;border-bottom:1px solid var(--border);}
+.vlan-table td{padding:4px;border-bottom:1px solid var(--border-subtle);vertical-align:middle;}
+.vlan-table input{background:var(--bg-input);border:1px solid var(--border);color:var(--text-primary);font-size:12px;padding:5px 7px;border-radius:5px;width:100%;transition:border-color .15s;}
+.vlan-table input:focus{outline:none;border-color:var(--accent);}
+.vlan-del{background:transparent;border:1px solid rgba(239,68,68,.3);color:#EF4444;border-radius:5px;padding:4px 9px;cursor:pointer;font-size:11px;transition:background .15s;}
+.vlan-del:hover{background:rgba(239,68,68,.12);}
+.dns-results{margin-top:14px;}
+.dns-results table{width:100%;border-collapse:collapse;font-size:12px;}
+.dns-results th{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;padding:7px 10px;border-bottom:1px solid var(--border);text-align:left;}
+.dns-results td{padding:7px 10px;border-bottom:1px solid var(--border-subtle);font-family:'JetBrains Mono',monospace;font-size:11px;}
+.dns-results td:first-child{color:var(--text-secondary);}
+.dns-results td:last-child{word-break:break-all;}
+.dns-status{padding:10px 14px;border-radius:8px;font-size:12px;margin-top:4px;}
+.dns-status.ok {background:rgba(16,185,129,.08);color:#10B981;border:1px solid rgba(16,185,129,.2);}
+.dns-status.err{background:rgba(239,68,68,.08) ;color:#EF4444;border:1px solid rgba(239,68,68,.2);}
+.dns-status.info{color:var(--text-muted);}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.dns-spin{display:inline-block;animation:spin .8s linear infinite;}
 </style>
 </head>
 <body>
@@ -1085,11 +1114,78 @@ body{font-family:var(--font-ui);background:var(--bg-base);color:var(--text-prima
 </div><!-- /tab-migration -->
 
 <div id="tab-network" class="tab-panel">
-  <div style="max-width:1440px;margin:0 auto;padding:80px 32px;text-align:center;">
-    <div style="font-size:32px;margin-bottom:16px;">🌐</div>
-    <div style="font-size:18px;font-weight:700;color:var(--text-primary);margin-bottom:8px;">Network Tools</div>
-    <div style="font-size:14px;color:var(--text-muted);">IP / Subnet Calculator, VLAN Planner, and DNS Checker — coming in the next update.</div>
+<div style="max-width:1440px;margin:0 auto;padding:24px 32px;">
+  <div class="net-grid">
+
+    <!-- ── IP / Subnet Calculator ───────────────────────────────────────── -->
+    <div class="card">
+      <div class="section-title">🔢 IP / Subnet Calculator</div>
+      <div style="margin-top:16px;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+        <div style="flex:1;min-width:180px;">
+          <label class="lbl">IPv4 Address / CIDR</label>
+          <input class="inp" id="sub-input" placeholder="192.168.1.0/24"
+            style="font-family:'JetBrains Mono',monospace;"
+            oninput="subCalc()" onkeydown="if(event.key==='Enter')subCalc()">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="subCalc()">Calculate</button>
+      </div>
+      <div id="sub-err" style="display:none;font-size:12px;color:#EF4444;margin-top:8px;"></div>
+      <div id="sub-results" class="net-result-grid" style="display:none;"></div>
+    </div>
+
+    <!-- ── DNS Checker ───────────────────────────────────────────────────── -->
+    <div class="card">
+      <div class="section-title">🔍 DNS Checker</div>
+      <div style="margin-top:16px;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+        <div style="flex:1;min-width:160px;">
+          <label class="lbl">Domain</label>
+          <input class="inp" id="dns-domain" placeholder="example.com"
+            style="font-family:'JetBrains Mono',monospace;"
+            onkeydown="if(event.key==='Enter')dnsCheck()">
+        </div>
+        <div>
+          <label class="lbl">Type</label>
+          <select class="inp" id="dns-type" style="width:auto;">
+            <option>A</option><option>AAAA</option><option>MX</option>
+            <option>TXT</option><option>NS</option><option>CNAME</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="dnsCheck()">Lookup</button>
+      </div>
+      <div id="dns-results" class="dns-results"></div>
+    </div>
+
+    <!-- ── VLAN Planner ──────────────────────────────────────────────────── -->
+    <div class="card net-full">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:8px;">
+        <div class="section-title" style="margin-bottom:0;">📋 VLAN Planner</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary btn-sm" onclick="vlanAddRow()">+ Add VLAN</button>
+          <button class="btn btn-secondary btn-sm" onclick="vlanClearAll()">🗑 Clear All</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="vlan-table">
+          <thead>
+            <tr>
+              <th style="width:80px;">VLAN ID</th>
+              <th style="min-width:140px;">Name / Purpose</th>
+              <th style="min-width:150px;">Subnet CIDR</th>
+              <th style="min-width:130px;">Gateway</th>
+              <th>Notes</th>
+              <th style="width:48px;"></th>
+            </tr>
+          </thead>
+          <tbody id="vlan-tbody"></tbody>
+        </table>
+      </div>
+      <div id="vlan-msg" style="font-size:12px;color:var(--text-muted);padding:16px 0;text-align:center;">
+        No VLANs added yet — click "+ Add VLAN" to start.
+      </div>
+    </div>
+
   </div>
+</div>
 </div><!-- /tab-network -->
 
 <script>
@@ -2373,7 +2469,7 @@ function getExportText() {
     L,
     '  MY ENVIRONMENT — EXPORT REPORT',
     '  Generated : ' + ts,
-    '  Source    : partyinohio.github.io/Calc',
+    '  Source    : centralshift.github.io/Tool-Box',
     L,
     '',
     '  SERVER / VM CALCULATOR',
@@ -2444,11 +2540,24 @@ function getExportText() {
     ...migSection,
     '',
     L,
+    '',
+    '  VLAN PLANNER',
+    D,
+    ...(vlanRows.length
+      ? ['  ' + 'ID'.padEnd(6) + 'Name'.padEnd(22) + 'CIDR'.padEnd(20) + 'Gateway'.padEnd(18) + 'Notes',
+         '  ' + '-'.repeat(76),
+         ...vlanRows.map(r =>
+           '  ' + String(r.vlanId||'—').padEnd(6) + (r.name||'—').padEnd(22) +
+           (r.cidr||'—').padEnd(20) + (r.gw||'—').padEnd(18) + (r.notes||'')
+         )]
+      : ['  (no VLANs defined)']),
+    '',
+    L,
   ].filter(l => l !== null).join('\n');
 
-  // Machine-readable block — v3 adds migration calculator state
+  // Machine-readable block — v4 adds VLAN planner state
   const data = {
-    v: 3,
+    v: 4,
     vmHw: {
       name:       document.getElementById('hw-name').value,
       sockets:    hwSockN,
@@ -2485,6 +2594,7 @@ function getExportText() {
       convRate:    migConvRN,
       overhead:    migOvhdN,
     },
+    vlans: vlanRows.map(r => ({ vlanId: r.vlanId, name: r.name, cidr: r.cidr, gw: r.gw, notes: r.notes })),
   };
 
   return lines + '\n===CALC-DATA===\n' + JSON.stringify(data) + '\n===END-DATA===\n';
@@ -2612,6 +2722,15 @@ function raidApplyImport(d) {
     migUpdateCompression();
     migCalc();
   }
+  // ── VLAN Planner ──────────────────────────────────────────────────────────
+  if (Array.isArray(d.vlans)) {
+    vlanRows = d.vlans.map((v, i) => ({
+      id: i + 1, vlanId: v.vlanId||'', name: v.name||'',
+      cidr: v.cidr||'', gw: v.gw||'', notes: v.notes||'',
+    }));
+    vlanNid = vlanRows.length + 1;
+    vlanRender();
+  }
 }
 
 function showImportErr(msg) {
@@ -2636,6 +2755,170 @@ function toggleTheme() {
   _themeLight = !_themeLight;
   document.documentElement.setAttribute('data-theme', _themeLight ? 'light' : 'dark');
   document.getElementById('theme-toggle-btn').textContent = _themeLight ? '☀️' : '🌙';
+}
+
+// ── Network Tools ────────────────────────────────────────────────────────────
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── 3a  IP / Subnet Calculator ───────────────────────────────────────────────
+function subCalc() {
+  const raw   = (document.getElementById('sub-input').value || '').trim();
+  const errEl = document.getElementById('sub-err');
+  const resEl = document.getElementById('sub-results');
+  errEl.style.display = 'none';
+  resEl.style.display = 'none';
+  if (!raw) return;
+
+  const m = raw.match(/^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s*\/\s*(\d+)$/);
+  if (!m) { errEl.textContent = 'Enter a valid IPv4 CIDR — e.g. 192.168.1.0/24'; errEl.style.display = 'block'; return; }
+
+  const prefix = parseInt(m[2]);
+  if (prefix < 0 || prefix > 32) { errEl.textContent = 'Prefix must be 0–32'; errEl.style.display = 'block'; return; }
+
+  const oct = m[1].split('.').map(Number);
+  if (oct.some(o => o < 0 || o > 255)) { errEl.textContent = 'Each octet must be 0–255'; errEl.style.display = 'block'; return; }
+
+  const ipInt = ((oct[0]<<24)|(oct[1]<<16)|(oct[2]<<8)|oct[3]) >>> 0;
+  const mask  = prefix === 0 ? 0 : ((~0 << (32 - prefix)) >>> 0);
+  const net   = (ipInt & mask) >>> 0;
+  const bcast = (net | (~mask >>> 0)) >>> 0;
+  const total = Math.pow(2, 32 - prefix);
+
+  function toIP(n) { return [(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255].join('.'); }
+
+  let first, last, usable;
+  if (prefix >= 31) { first = toIP(net); last = toIP(bcast); usable = total; }
+  else              { first = toIP(net+1); last = toIP(bcast-1); usable = total - 2; }
+
+  function kv(lbl, val) {
+    return `<div class="net-kv"><div class="net-kv-label">${lbl}</div><div class="net-kv-val">${val}</div></div>`;
+  }
+  resEl.innerHTML =
+    kv('Network Address', toIP(net) + '/' + prefix) +
+    kv('Broadcast',       toIP(bcast)) +
+    kv('First Host',      first) +
+    kv('Last Host',       last) +
+    kv('Subnet Mask',     toIP(mask)) +
+    kv('Wildcard Mask',   toIP(~mask >>> 0)) +
+    kv('Total Hosts',     total.toLocaleString()) +
+    kv('Usable Hosts',    usable > 0 ? usable.toLocaleString() : '—');
+  resEl.style.display = 'grid';
+}
+
+// ── 3b  VLAN Planner ─────────────────────────────────────────────────────────
+let vlanRows = [], vlanNid = 1;
+
+function vlanRender() {
+  const tbody = document.getElementById('vlan-tbody');
+  const msg   = document.getElementById('vlan-msg');
+  if (!tbody) return;
+  tbody.innerHTML = vlanRows.map(r => `<tr>
+    <td><input id="vnid${r.id}" type="number" min="1" max="4094" value="${escHtml(String(r.vlanId))}"
+         placeholder="1" oninput="vlanSet(${r.id},'vlanId',this.value);vlanValidate()"></td>
+    <td><input id="vnnm${r.id}" value="${escHtml(r.name)}" placeholder="Management"
+         oninput="vlanSet(${r.id},'name',this.value)"></td>
+    <td><input id="vnci${r.id}" value="${escHtml(r.cidr)}" placeholder="10.10.1.0/24"
+         style="font-family:'JetBrains Mono',monospace"
+         oninput="vlanSet(${r.id},'cidr',this.value)"></td>
+    <td><input id="vngw${r.id}" value="${escHtml(r.gw)}" placeholder="10.10.1.1"
+         style="font-family:'JetBrains Mono',monospace"
+         oninput="vlanSet(${r.id},'gw',this.value)"></td>
+    <td><input id="vnno${r.id}" value="${escHtml(r.notes)}" placeholder="Notes"
+         oninput="vlanSet(${r.id},'notes',this.value)"></td>
+    <td><button class="vlan-del" onclick="vlanDel(${r.id})" title="Remove">✕</button></td>
+  </tr>`).join('');
+  if (msg) msg.style.display = vlanRows.length ? 'none' : 'block';
+  vlanValidate();
+}
+
+function vlanSet(id, field, value) {
+  const r = vlanRows.find(x => x.id === id);
+  if (r) r[field] = value;
+}
+
+function vlanDel(id) { vlanRows = vlanRows.filter(r => r.id !== id); vlanRender(); }
+
+function vlanClearAll() {
+  if (!vlanRows.length) return;
+  if (!confirm('Clear all VLAN rows?')) return;
+  vlanRows = []; vlanRender();
+}
+
+function vlanAddRow(seed) {
+  const suggest = (() => {
+    const last = [...vlanRows].reverse().find(r => /^\d+\.\d+\.\d+\.\d+\/\d+/.test(r.cidr));
+    if (!last) return '';
+    const m = last.cidr.match(/^(\d+)\.(\d+)\.(\d+)\.\d+\/(\d+)$/);
+    if (!m) return '';
+    let [,a,b,c,p] = m.map(Number);
+    if (p <= 24) { c = (c + 1) % 256; if (!c) b = (b + 1) % 256; }
+    else if (p <= 16) { b = (b + 1) % 256; c = 0; }
+    return `${a}.${b}.${c}.0/${p}`;
+  })();
+  vlanRows.push({
+    id: vlanNid++,
+    vlanId: seed ? (seed.vlanId || '') : '',
+    name:   seed ? (seed.name   || '') : '',
+    cidr:   seed ? (seed.cidr   || '') : suggest,
+    gw:     seed ? (seed.gw     || '') : '',
+    notes:  seed ? (seed.notes  || '') : '',
+  });
+  vlanRender();
+}
+
+function vlanValidate() {
+  const seen = {};
+  vlanRows.forEach(r => {
+    const el = document.getElementById('vnid' + r.id);
+    if (!el) return;
+    const v   = parseInt(r.vlanId);
+    const bad = r.vlanId !== '' && (isNaN(v) || v < 1 || v > 4094);
+    seen[r.vlanId] = (seen[r.vlanId] || 0) + 1;
+    const dup = r.vlanId !== '' && !bad && seen[r.vlanId] > 1;
+    el.style.borderColor = (bad || dup) ? '#EF4444' : '';
+    el.title = bad ? 'VLAN ID must be 1–4094' : dup ? 'Duplicate VLAN ID' : '';
+  });
+}
+
+// ── 3c  DNS Checker ──────────────────────────────────────────────────────────
+async function dnsCheck() {
+  const domain = (document.getElementById('dns-domain').value || '').trim();
+  const type   = document.getElementById('dns-type').value;
+  const out    = document.getElementById('dns-results');
+  if (!domain) { out.innerHTML = ''; return; }
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,252}\.[a-zA-Z]{2,63}$/.test(domain)) {
+    out.innerHTML = '<div class="dns-status err">Enter a valid domain name.</div>'; return;
+  }
+  out.innerHTML = `<div class="dns-status info"><span class="dns-spin">&#8635;</span> Looking up ${type} for ${escHtml(domain)}…</div>`;
+  try {
+    const url  = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=${encodeURIComponent(type)}`;
+    const resp = await fetch(url, { headers: { Accept: 'application/dns-json' } });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const j = await resp.json();
+    if (j.Status !== 0) {
+      const errs = {1:'Format error',2:'Server failure',3:'Name does not exist (NXDOMAIN)',4:'Not implemented',5:'Query refused'};
+      out.innerHTML = `<div class="dns-status err">${errs[j.Status] || 'DNS error (code ' + j.Status + ')'}</div>`;
+      return;
+    }
+    const ans = j.Answer || [];
+    if (!ans.length) {
+      out.innerHTML = `<div class="dns-status info">No ${type} records found for ${escHtml(domain)}.</div>`;
+      return;
+    }
+    const TN = {1:'A',2:'NS',5:'CNAME',6:'SOA',15:'MX',16:'TXT',28:'AAAA',33:'SRV',257:'CAA'};
+    const rows = ans.map(a => {
+      const d = a.data.replace(/^"|"$/g, '').replace(/"\s*"/g, ' ');
+      return `<tr><td>${escHtml(a.name.replace(/\.$/, ''))}</td><td>${TN[a.type] || a.type}</td><td>${a.TTL}s</td><td>${escHtml(d)}</td></tr>`;
+    }).join('');
+    out.innerHTML = `<div class="dns-status ok" style="margin-bottom:8px;">&#10003; ${ans.length} record${ans.length !== 1 ? 's' : ''} found</div>
+      <table><thead><tr><th>Name</th><th>Type</th><th>TTL</th><th>Data</th></tr></thead>
+      <tbody>${rows}</tbody></table>`;
+  } catch (e) {
+    out.innerHTML = `<div class="dns-status err">Lookup failed: ${escHtml(e.message)}</div>`;
+  }
 }
 
 function exportPDF() {
