@@ -11,6 +11,14 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
+## 2026-06-24 — Claude — Fix: reference cards no longer clip at bottom in two-column layout
+
+- Root cause: `.right-col` is a flex column with `max-height`+`overflow-y:auto`; default `flex-shrink:1` on `.card` children lets the flex algorithm shrink tall cards below their content height, and `overflow:hidden` on `.card` clips the bottom — confirmed on RAID ("RAID 10 — High-I/O databases") and Migration ("Cold / Offline Copy") tabs
+- Fix: added `.right-col > .card{flex-shrink:0;}` inside `@media(min-width:1101px)` so cards never shrink; the right-col scrollbar handles overflow as intended
+- Affects all four tabs (Environment, RAID, Migration + reverse planner); brace balance 1011/1011
+
+---
+
 ## 2026-06-24 — Claude — Fix: right-column reference cards no longer clip/cut off content
 
 - Primary fix: `.log-pills` changed from `flex-wrap:nowrap` to `flex-wrap:wrap` — pills in Calculation Log entries now wrap instead of overflowing and being clipped by the card boundary

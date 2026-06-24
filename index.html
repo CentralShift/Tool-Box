@@ -310,6 +310,7 @@ body{font-family:var(--font-ui);background:var(--bg-base);color:var(--text-prima
 /* ── Sticky right sidebar ─────────────────────────────────────────────────── */
 @media(min-width:1101px){
   .right-col{position:sticky;top:128px;align-self:start;max-height:calc(100vh - 144px);overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;padding-bottom:16px;}
+  .right-col > .card{flex-shrink:0;}
 }
 
 /* ── Light theme ────────────────────────────────────────────────────────────── */
