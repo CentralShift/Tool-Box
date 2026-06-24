@@ -1406,7 +1406,7 @@ function renderGroups() {
 }
 
 // ── Calculation ───────────────────────────────────────────────────────────────
-function calculate() {
+function calculate(skipScroll) {
   if (!groups.length) { alert('Add at least one VM group first.'); return; }
 
   let totalVMs=0, totalvCPU=0, totalRAM=0, totalStorGB=0, winVMs=0, sqlGroups=[];
@@ -1465,7 +1465,7 @@ function calculate() {
 
   const res = document.getElementById('results');
   res.style.display = 'flex';
-  setTimeout(()=>res.scrollIntoView({behavior:'smooth',block:'start'}), 80);
+  if (!skipScroll) setTimeout(()=>res.scrollIntoView({behavior:'smooth',block:'start'}), 80);
 }
 
 // ── Calculation Log ───────────────────────────────────────────────────────────
@@ -2845,7 +2845,7 @@ function raidApplyImport(d) {
     groups = d.vmGroups.map(g => ({...g}));
     gid    = groups.length ? Math.max(...groups.map(g => g.id)) : 0;
     renderGroups();
-    if (groups.length) calculate();
+    if (groups.length) calculate(true);
   }
 
   // ── Forward RAID calculator ───────────────────────────────────────────────
