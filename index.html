@@ -378,6 +378,59 @@ body{font-family:var(--font-ui);background:var(--bg-base);color:var(--text-prima
 .dns-status.info{color:var(--text-muted);}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 .dns-spin{display:inline-block;animation:spin .8s linear infinite;}
+
+/* ── Environment dashboard refresh ───────────────────────────────────────── */
+:root{
+  --dashboard-max:1680px;
+  --focus-ring:0 0 0 3px rgba(96,165,250,.38);
+}
+body{background:#08111f;}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #93C5FD;outline-offset:2px;box-shadow:var(--focus-ring);}
+.app-header{background:rgba(8,17,31,.97);box-shadow:0 8px 28px rgba(0,0,0,.22);}
+.app-header>div:first-child{max-width:var(--dashboard-max);width:100%;margin:0 auto;}
+.logo-icon{width:34px;height:34px;border-radius:9px;box-shadow:0 6px 20px rgba(37,99,235,.22);}
+.tab-bar{width:100%;padding:0 max(24px,calc((100vw - var(--dashboard-max))/2));}
+.main{max-width:var(--dashboard-max);grid-template-columns:minmax(0,1fr) 420px;gap:16px;padding:16px 24px 32px;}
+.left-col,.right-col{gap:16px;}
+.card{border-radius:10px;box-shadow:0 10px 32px rgba(0,0,0,.22);}
+.card-header{padding:14px 20px;}
+.card-body{padding:20px;}
+.env-hardware{order:1;}
+.env-workloads{order:2;}
+.calc-row{order:3;border-radius:10px;}
+#results{order:4;}
+.env-workloads .add-vm-foot{justify-content:space-between;}
+.env-workloads .btn-secondary{color:#BFDBFE;border-color:rgba(96,165,250,.32);}
+.capacity-card{border-color:rgba(96,165,250,.24);}
+.capacity-card .card-header{background:rgba(59,130,246,.055);}
+.capacity-freshness{display:flex;align-items:center;gap:6px;color:var(--text-muted);font-size:10px;font-family:var(--font-mono);}
+.capacity-dot{width:6px;height:6px;border-radius:50%;background:var(--accent-green);box-shadow:0 0 0 3px rgba(16,185,129,.12);}
+.capacity-list{display:flex;flex-direction:column;gap:18px;}
+.capacity-item{padding-bottom:18px;border-bottom:1px solid var(--border-subtle);}
+.capacity-item:last-child{padding-bottom:0;border-bottom:0;}
+.capacity-top,.capacity-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.capacity-name{font-size:13px;font-weight:700;color:var(--text-primary);}
+.capacity-value{font:600 11px/1.4 var(--font-mono);color:var(--text-secondary);text-align:right;}
+.capacity-track{height:8px;margin:9px 0 7px;background:rgba(255,255,255,.075);border-radius:999px;overflow:hidden;}
+.capacity-fill{height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,#2563EB,#22D3EE);transition:width .55s cubic-bezier(.2,.8,.2,1);}
+.capacity-pct{font:700 12px/1 var(--font-mono);color:#67E8F9;}
+.capacity-state{font-size:10px;font-weight:700;color:var(--accent-green);}
+.capacity-state.warn{color:#FCD34D;}.capacity-state.danger{color:#FCA5A5;}
+.recommended-mini{margin-top:18px;padding-top:18px;border-top:1px solid var(--border-subtle);}
+.recommended-mini-title{font-size:10px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
+.recommended-mini-grid{display:grid;grid-template-columns:1fr;gap:0;border:1px solid var(--border-subtle);border-radius:8px;overflow:hidden;}
+.recommended-mini-row{display:grid;grid-template-columns:86px 1fr;gap:10px;padding:9px 11px;border-bottom:1px solid var(--border-subtle);font-size:11px;}
+.recommended-mini-row:last-child{border-bottom:0;}
+.recommended-mini-row span:first-child{color:var(--text-muted);}.recommended-mini-row strong{color:var(--text-primary);font-family:var(--font-mono);font-weight:600;}
+.capacity-verdict{display:flex;align-items:flex-start;gap:9px;margin-top:14px;padding:10px 12px;border:1px solid rgba(16,185,129,.35);border-radius:8px;background:rgba(16,185,129,.06);color:#A7F3D0;font-size:11px;line-height:1.5;}
+.capacity-verdict.warn{border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.06);color:#FDE68A;}
+.capacity-verdict.danger{border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.06);color:#FECACA;}
+[data-theme="light"] body{background:#EEF3FA;}
+[data-theme="light"] .app-header{background:rgba(255,255,255,.97);}
+[data-theme="light"] .capacity-track{background:rgba(15,23,42,.09);}
+@media(min-width:1101px){.right-col{top:116px;max-height:calc(100vh - 132px);}}
+@media(max-width:1100px){.main{grid-template-columns:1fr;}.right-col{display:flex;}.capacity-card{order:-1;}}
+@media(max-width:760px){.main{padding:12px;}.app-header>div:first-child{padding:10px 12px!important;}.app-sub{display:none;}.header-actions{justify-content:flex-end;}.header-actions .btn-sm:nth-of-type(2){display:none;}}
 </style>
 </head>
 <body>
@@ -417,13 +470,13 @@ body{font-family:var(--font-ui);background:var(--bg-base);color:var(--text-prima
   <div class="left-col">
 
     <!-- VM Workloads -->
-    <div class="card">
+    <div class="card env-workloads">
       <div class="card-header">
         <div class="card-title-wrap">
           <div class="card-icon ci-blue">⚡</div>
           <div>
-            <div class="card-title">Virtual Machine Workloads</div>
-            <div class="card-desc">Group VMs by spec — e.g. "Web Servers", "DB Servers", "File Servers"</div>
+            <div class="card-title">VM Workload Groups</div>
+            <div class="card-desc">Model repeatable VM profiles and their total resource demand</div>
           </div>
         </div>
       </div>
@@ -431,19 +484,19 @@ body{font-family:var(--font-ui);background:var(--bg-base);color:var(--text-prima
         <div class="vm-groups" id="vm-groups"></div>
       </div>
       <div class="add-vm-foot">
-        <button class="btn btn-secondary" onclick="addVMGroup()">+ Add VM Group</button>
+        <button class="btn btn-secondary" onclick="addVMGroup()">＋ Add VM group</button>
         <span style="font-size:12px;color:var(--text-muted);">Group VMs with similar specs together</span>
       </div>
     </div>
 
     <!-- Current Hardware -->
-    <div class="card">
+    <div class="card env-hardware">
       <div class="card-header">
         <div class="card-title-wrap">
           <div class="card-icon ci-teal">🔩</div>
           <div>
-            <div class="card-title">Current Physical Hardware</div>
-            <div class="card-desc">The server(s) currently hosting these workloads</div>
+            <div class="card-title">Server Profile</div>
+            <div class="card-desc">Define the host capacity used for fit and utilisation checks</div>
           </div>
         </div>
       </div>
@@ -548,6 +601,48 @@ body{font-family:var(--font-ui);background:var(--bg-base);color:var(--text-prima
 
   <!-- RIGHT COLUMN -->
   <div class="right-col">
+
+    <!-- Live Capacity Summary -->
+    <div class="card capacity-card" aria-live="polite">
+      <div class="card-header">
+        <div class="card-title-wrap">
+          <div class="card-icon ci-blue">◫</div>
+          <div>
+            <div class="card-title">Capacity Summary</div>
+            <div class="card-desc">Current workload demand against this host</div>
+          </div>
+        </div>
+        <div class="capacity-freshness"><span class="capacity-dot"></span><span id="capacity-updated">Ready</span></div>
+      </div>
+      <div class="card-body">
+        <div class="capacity-list">
+          <div class="capacity-item">
+            <div class="capacity-top"><span class="capacity-name">CPU</span><span class="capacity-value" id="cap-cpu-value">Add workloads to begin</span></div>
+            <div class="capacity-track"><div class="capacity-fill" id="cap-cpu-fill"></div></div>
+            <div class="capacity-meta"><span class="capacity-pct" id="cap-cpu-pct">—</span><span class="capacity-state" id="cap-cpu-state">Waiting</span></div>
+          </div>
+          <div class="capacity-item">
+            <div class="capacity-top"><span class="capacity-name">Memory</span><span class="capacity-value" id="cap-ram-value">Add workloads to begin</span></div>
+            <div class="capacity-track"><div class="capacity-fill" id="cap-ram-fill"></div></div>
+            <div class="capacity-meta"><span class="capacity-pct" id="cap-ram-pct">—</span><span class="capacity-state" id="cap-ram-state">Waiting</span></div>
+          </div>
+          <div class="capacity-item">
+            <div class="capacity-top"><span class="capacity-name">Storage</span><span class="capacity-value" id="cap-stor-value">Add workloads to begin</span></div>
+            <div class="capacity-track"><div class="capacity-fill" id="cap-stor-fill"></div></div>
+            <div class="capacity-meta"><span class="capacity-pct" id="cap-stor-pct">—</span><span class="capacity-state" id="cap-stor-state">Waiting</span></div>
+          </div>
+        </div>
+        <div class="recommended-mini">
+          <div class="recommended-mini-title">Recommended Host</div>
+          <div class="recommended-mini-grid">
+            <div class="recommended-mini-row"><span>CPU</span><strong id="cap-rec-cpu">Calculate to size</strong></div>
+            <div class="recommended-mini-row"><span>Memory</span><strong id="cap-rec-ram">—</strong></div>
+            <div class="recommended-mini-row"><span>Storage</span><strong id="cap-rec-stor">—</strong></div>
+          </div>
+          <div class="capacity-verdict" id="capacity-verdict"><span>✓</span><span>Enter your workload groups and calculate to evaluate this host.</span></div>
+        </div>
+      </div>
+    </div>
 
     <!-- Sizing Guide -->
     <div class="card">
@@ -1558,6 +1653,35 @@ function renderStats({totalVMs,totalvCPU,totalRAM,storTB,winVMs,sqlGroups,hwLogi
     ${ubar('RAM', util_ram, `${totalRAM} GB required vs ${hwRAM} GB available`)}
     ${ubar('Storage', util_stor, `${Math.round(storTB*10)/10} TB required vs ${hwStor} TB available`)}
   `;
+
+  renderCapacitySummary({totalvCPU,totalRAM,storTB,hwLogical,hwRAM,hwStor,util_cpu,util_ram,util_stor});
+}
+
+function renderCapacitySummary({totalvCPU,totalRAM,storTB,hwLogical,hwRAM,hwStor,util_cpu,util_ram,util_stor}) {
+  const metrics = [
+    {key:'cpu', pct:util_cpu, value:`${totalvCPU} / ${hwLogical} logical CPUs`},
+    {key:'ram', pct:util_ram, value:`${totalRAM} / ${hwRAM} GB`},
+    {key:'stor', pct:util_stor, value:`${(Math.round(storTB*100)/100)} / ${hwStor} TB`},
+  ];
+  metrics.forEach(({key,pct,value}) => {
+    const state = pct < 70 ? 'Capacity OK' : pct < 90 ? 'Limited headroom' : 'At risk';
+    const level = pct < 70 ? '' : pct < 90 ? 'warn' : 'danger';
+    document.getElementById(`cap-${key}-value`).textContent = value;
+    document.getElementById(`cap-${key}-pct`).textContent = `${Math.round(pct)}% used`;
+    document.getElementById(`cap-${key}-fill`).style.width = `${Math.min(100, Math.max(0, pct))}%`;
+    const stateEl = document.getElementById(`cap-${key}-state`);
+    stateEl.textContent = state;
+    stateEl.className = `capacity-state ${level}`;
+  });
+  const peak = Math.max(util_cpu, util_ram, util_stor);
+  const verdict = document.getElementById('capacity-verdict');
+  verdict.className = `capacity-verdict ${peak < 70 ? '' : peak < 90 ? 'warn' : 'danger'}`;
+  verdict.innerHTML = peak < 70
+    ? '<span>✓</span><span>This host has comfortable capacity for the modelled workloads.</span>'
+    : peak < 90
+      ? '<span>⚠</span><span>This host fits, but one or more resources have limited growth headroom.</span>'
+      : '<span>!</span><span>This host is at risk of contention. Review the recommended specification.</span>';
+  document.getElementById('capacity-updated').textContent = 'Updated just now';
 }
 
 function ubar(label, pct, note) {
@@ -1603,6 +1727,10 @@ function renderTable() {
 function renderRecs({opt, fit, totalvCPU, totalRAM, storTB}) {
   const optRatio = (totalvCPU / opt.totalCores).toFixed(1);
   const fitRatio = (totalvCPU / fit.totalCores).toFixed(1);
+
+  document.getElementById('cap-rec-cpu').textContent = `${opt.sockets}S × ${opt.coresPerSock} cores`;
+  document.getElementById('cap-rec-ram').textContent = `${opt.ram} GB ${opt.ramCfg}`;
+  document.getElementById('cap-rec-stor').textContent = `${opt.stor} TB usable target`;
 
   const TIP = {
     cpuConfig: 'S = Sockets, C = Cores per socket. A 2S/16C server = 32 physical cores. More sockets add memory bandwidth and NUMA performance but increase cost. The overcommit ratio shown is virtual CPUs vs physical cores.',
