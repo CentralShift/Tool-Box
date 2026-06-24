@@ -432,6 +432,11 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 @media(min-width:1101px){.right-col{top:116px;max-height:calc(100vh - 132px);}}
 @media(max-width:1100px){.main{grid-template-columns:1fr;}.right-col{display:flex;}.capacity-card{order:-1;}}
 @media(max-width:760px){.main{padding:12px;}.app-header>div:first-child{padding:10px 12px!important;}.app-sub{display:none;}.header-actions{justify-content:flex-end;}.header-actions .btn-sm:nth-of-type(2){display:none;}}
+/* ── Cross-tab sync badge ─────────────────────────────────────────────────── */
+.env-sync-badge{display:none;align-items:center;gap:3px;margin-top:3px;font-size:10px;color:var(--accent-blue,#60A5FA);line-height:1;}
+.env-sync-badge.active{display:flex;}
+.env-sync-badge.manual{color:var(--text-muted);}
+.env-synced{border-color:rgba(96,165,250,0.45)!important;}
 </style>
 </head>
 <body>
@@ -943,6 +948,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
                 <option value="GB">GB</option>
               </select>
             </div>
+            <div class="env-sync-badge" id="rv-target-badge">↩ from Environment</div>
           </div>
           <div class="fg">
             <label class="fl">RAID Level</label>
@@ -1034,6 +1040,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
           <div class="fg">
             <label class="fl">Number of VMs</label>
             <input type="number" class="fi" id="mig-vms" value="4" min="1" step="1" oninput="migCalc()">
+            <div class="env-sync-badge" id="mig-vms-badge">↩ from Environment</div>
           </div>
           <div class="fg">
             <label class="fl">Total Data Size</label>
@@ -1044,6 +1051,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
                 <option value="TB">TB</option>
               </select>
             </div>
+            <div class="env-sync-badge" id="mig-size-badge">↩ from Environment</div>
           </div>
           <div class="fg">
             <label class="fl">Source Platform</label>
@@ -1310,6 +1318,7 @@ let groups = [];
 let gid = 0;
 let calcLog = [];
 let logId = 0;
+const envSyncManual = new Set(); // tracks which synced fields the user has manually overridden
 
 // ── Group CRUD ────────────────────────────────────────────────────────────────
 function addVMGroup(name='') {
@@ -1406,7 +1415,7 @@ function renderGroups() {
 }
 
 // ── Calculation ───────────────────────────────────────────────────────────────
-function calculate(skipScroll) {
+function calculate(skipScroll, syncCrossTabs) {
   if (!groups.length) { alert('Add at least one VM group first.'); return; }
 
   let totalVMs=0, totalvCPU=0, totalRAM=0, totalStorGB=0, winVMs=0, sqlGroups=[];
@@ -1462,6 +1471,8 @@ function calculate(skipScroll) {
     opt, fit,
     groupSnapshot: groups.map(g=>({...g}))
   });
+
+  if (syncCrossTabs !== false) syncFromEnvironment(totalVMs, storTB);
 
   const res = document.getElementById('results');
   res.style.display = 'flex';
@@ -1954,6 +1965,16 @@ function infoIcon(tip) {
   gid++;
   groups.push({id:gid, name:'File / Print Servers', os:'windows-server', vcpu:2, ram:8, storage:200, count:1, sql:false, sqlEdition:'standard'});
   renderGroups();
+
+  // When user manually edits a synced field, flip its badge to "manual override"
+  ['mig-vms', 'mig-size', 'rv-target'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', function() {
+      envSyncManual.add(id);
+      setSyncBadge(id, true, true);
+    });
+  });
 })();
 
 // ── RAID Calculator ───────────────────────────────────────────────────────────
@@ -2769,6 +2790,65 @@ async function raidCopyClipboard() {
   }, 2000);
 }
 
+// ── Cross-tab sync ────────────────────────────────────────────────────────────
+function setSyncBadge(fieldId, active, manual) {
+  const badge = document.getElementById(fieldId + '-badge');
+  if (!badge) return;
+  const el = document.getElementById(fieldId);
+  if (!active) {
+    badge.className = 'env-sync-badge';
+    if (el) el.classList.remove('env-synced');
+    return;
+  }
+  badge.className = 'env-sync-badge active' + (manual ? ' manual' : '');
+  badge.textContent = manual ? '✎ manual override' : '↩ from Environment';
+  if (el) el.classList.toggle('env-synced', !manual);
+}
+
+function syncFromEnvironment(totalVMs, storTB) {
+  // Migration: VM count
+  const migVms = document.getElementById('mig-vms');
+  if (migVms) migVms.value = totalVMs;
+
+  // Migration: data size + unit — use TB when >= 1 TB, otherwise GB
+  const migSize = document.getElementById('mig-size');
+  const migUnit = document.getElementById('mig-unit');
+  if (migSize && migUnit) {
+    if (storTB >= 1) {
+      migUnit.value = 'TB';
+      migSize.value = Math.round(storTB * 10) / 10;
+    } else {
+      migUnit.value = 'GB';
+      migSize.value = Math.round(storTB * 1024);
+    }
+  }
+
+  // Reverse RAID: target usable capacity
+  const rvTarget = document.getElementById('rv-target');
+  const rvUnit   = document.getElementById('rv-unit');
+  if (rvTarget && rvUnit) {
+    if (storTB >= 1) {
+      rvUnit.value   = 'TB';
+      rvTarget.value = Math.round(storTB * 10) / 10;
+    } else {
+      rvUnit.value   = 'GB';
+      rvTarget.value = Math.round(storTB * 1024);
+    }
+  }
+
+  // Reset manual-override flags and refresh badges
+  envSyncManual.delete('mig-vms');
+  envSyncManual.delete('mig-size');
+  envSyncManual.delete('rv-target');
+  setSyncBadge('mig-vms',   true, false);
+  setSyncBadge('mig-size',  true, false);
+  setSyncBadge('rv-target', true, false);
+
+  // Recompute downstream calcs
+  migCalc();
+  rvCalc();
+}
+
 // ── Import ────────────────────────────────────────────────────────────────────
 function raidImport() {
   document.getElementById('import-file').click();
@@ -2845,7 +2925,7 @@ function raidApplyImport(d) {
     groups = d.vmGroups.map(g => ({...g}));
     gid    = groups.length ? Math.max(...groups.map(g => g.id)) : 0;
     renderGroups();
-    if (groups.length) calculate(true);
+    if (groups.length) calculate(true, false);
   }
 
   // ── Forward RAID calculator ───────────────────────────────────────────────

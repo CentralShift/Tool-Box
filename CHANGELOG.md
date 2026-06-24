@@ -11,6 +11,14 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
+## 2026-06-24 — Claude — Cross-tab sync: Environment totals feed Migration + Storage/RAID on Calculate
+
+- Clicking "Calculate" on the Environment tab now propagates total VM count → `mig-vms`, total storage → `mig-size`/`mig-unit`, and total storage → `rv-target`/`rv-unit`; downstream calcs recompute automatically
+- Synced fields show a small "↩ from Environment" badge and a blue input border; if the user manually edits a synced field the badge flips to "✎ manual override" — next Calculate re-syncs all fields
+- Import is isolated: `raidApplyImport` calls `calculate(true, false)` so import-restored values are never overwritten by a stale sync; brace balance 664/664
+
+---
+
 ## 2026-06-24 — Claude — Fix: import now restores VM workload groups
 
 - Root cause: `calculate()` called during import fired `scrollIntoView` on `#results`, scrolling VM groups out of the viewport so they appeared to vanish even though they were correctly restored in the DOM
