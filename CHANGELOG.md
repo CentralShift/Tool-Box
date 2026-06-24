@@ -11,6 +11,20 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
+## 2026-06-24 — Claude — Added CODEX_PROMPT.md
+
+- Added `CODEX_PROMPT.md` onboarding prompt to repo root for Codex agent context and workflow rules
+
+---
+
+## 2026-06-24 10:03 — Codex — Refresh Environment as a live capacity dashboard
+
+- Reworked the Environment layout into a compact server-profile and VM-workload workspace with clearer hierarchy, spacing, focus states, and responsive behaviour
+- Added a sticky live Capacity Summary for CPU, memory, storage, fit status, and the optimal recommended host specification
+- Preserved the existing calculation, export, import, licensing, RAID, migration, and network logic; JavaScript syntax and dashboard ID bindings validated
+
+---
+
 ## 2026-06-24 — Claude — Pipeline test from new canonical folder
 
 - Verified commit + push + GitHub Pages deploy works from `C:\Users\Admin\Documents\Claude\Projects\Centralshift ToolBox`
