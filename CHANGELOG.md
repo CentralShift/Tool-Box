@@ -11,6 +11,14 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
+## 2026-06-24 — Claude — Fix: right-column reference cards no longer clip/cut off content
+
+- Primary fix: `.log-pills` changed from `flex-wrap:nowrap` to `flex-wrap:wrap` — pills in Calculation Log entries now wrap instead of overflowing and being clipped by the card boundary
+- Secondary fix: added `overflow-wrap:break-word;word-break:break-word` to `.card-body`, `.ref-box`, `.log-detail-val`, `.log-detail-sub` so long text and monospace values wrap rather than overflow
+- Right-col sticky scroll container: added `overflow-x:hidden` (prevents horizontal bleed) and `padding-bottom:16px` (breathing room so last card content isn't flush against the scroll clip boundary); brace balance 1010/1010
+
+---
+
 ## 2026-06-24 — Claude — Cross-tab sync: Environment totals feed Migration + Storage/RAID on Calculate
 
 - Clicking "Calculate" on the Environment tab now propagates total VM count → `mig-vms`, total storage → `mig-size`/`mig-unit`, and total storage → `rv-target`/`rv-unit`; downstream calcs recompute automatically
