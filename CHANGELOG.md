@@ -11,6 +11,14 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
+## 2026-06-24 — Claude — Added Excel (.xlsx) export/import
+
+- `⬇ XLSX` button in header exports a workbook with four human-readable sheets (Environment, RAID, Migration, Network) plus a hidden `_data` sheet containing the v4 JSON blob for round-trip import
+- Import button now accepts `.txt` and `.xlsx`; detects file type and routes to the correct handler; `.xlsx` import reads the `_data` sheet and calls `raidApplyImport()` to repopulate all calculators
+- SheetJS 0.18.5 loaded via CDN; existing `.txt` and PDF export/import unchanged
+
+---
+
 ## 2026-06-24 — Claude — Added CODEX_PROMPT.md
 
 - Added `CODEX_PROMPT.md` onboarding prompt to repo root for Codex agent context and workflow rules

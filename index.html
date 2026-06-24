@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
   --bg-base: #080D1A;
@@ -446,11 +447,12 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
     </div>
     <div class="header-actions">
       <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle light / dark mode">🌙</button>
-      <input type="file" id="import-file" accept=".txt" style="display:none;" onchange="raidHandleImport(event)">
+      <input type="file" id="import-file" accept=".txt,.xlsx" style="display:none;" onchange="raidHandleImport(event)">
       <button class="btn btn-secondary btn-sm" onclick="raidImport()">📂 Import</button>
       <button class="btn btn-secondary btn-sm" id="raid-copy-btn" onclick="raidCopyClipboard()">📋 Copy</button>
       <button class="btn btn-primary btn-sm" onclick="raidExportTxt()">⬇ .txt</button>
       <button class="btn btn-primary btn-sm" onclick="exportPDF()">📄 PDF</button>
+      <button class="btn btn-primary btn-sm" onclick="exportXlsx()">⬇ XLSX</button>
     </div>
   </div>
   <nav class="tab-bar" role="tablist">
@@ -2775,23 +2777,55 @@ function raidImport() {
 function raidHandleImport(event) {
   const file = event.target.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const text  = e.target.result;
-    const match = text.match(/===CALC-DATA===\s*\n([\s\S]*?)\n===END-DATA===/);
-    if (!match) {
-      showImportErr("Couldn't read calculator data from this file. Make sure it was exported from this tool.");
-      return;
+
+  if (file.name.toLowerCase().endsWith('.xlsx')) {
+    // ── Excel (.xlsx) import ──────────────────────────────────────────────
+    if (typeof window.XLSX === 'undefined') {
+      showImportErr('Excel library not loaded yet — please wait a moment and try again.');
+      event.target.value = ''; return;
     }
-    try {
-      raidApplyImport(JSON.parse(match[1].trim()));
-      showImportErr('');
-    } catch (_) {
-      showImportErr('Failed to parse calculator data — the file may be corrupted.');
-    }
-    event.target.value = ''; // allow re-importing the same file
-  };
-  reader.readAsText(file);
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const wb = window.XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+        const ws = wb.Sheets['_data'];
+        if (!ws) {
+          showImportErr("No '_data' sheet found — make sure this .xlsx was exported from MSP Toolbox.");
+          return;
+        }
+        const cell = ws['B1'];
+        if (!cell || !cell.v) {
+          showImportErr("The '_data' sheet is empty or unreadable.");
+          return;
+        }
+        raidApplyImport(JSON.parse(String(cell.v)));
+        showImportErr('');
+      } catch (err) {
+        showImportErr('Failed to read Excel file: ' + err.message);
+      }
+      event.target.value = '';
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    // ── Plain-text (.txt) import ──────────────────────────────────────────
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const text  = e.target.result;
+      const match = text.match(/===CALC-DATA===\s*\n([\s\S]*?)\n===END-DATA===/);
+      if (!match) {
+        showImportErr("Couldn't read calculator data from this file. Make sure it was exported from this tool.");
+        return;
+      }
+      try {
+        raidApplyImport(JSON.parse(match[1].trim()));
+        showImportErr('');
+      } catch (_) {
+        showImportErr('Failed to parse calculator data — the file may be corrupted.');
+      }
+      event.target.value = '';
+    };
+    reader.readAsText(file);
+  }
 }
 
 function raidApplyImport(d) {
@@ -3131,6 +3165,254 @@ function exportPDF() {
   }
 
   doc.save('tool-box-report-' + new Date().toISOString().slice(0, 10) + '.pdf');
+}
+
+// ── Excel (.xlsx) Export ──────────────────────────────────────────────────────
+function exportXlsx() {
+  if (typeof window.XLSX === 'undefined') {
+    alert('Excel library not loaded yet — please wait a moment and try again.');
+    return;
+  }
+  const X  = window.XLSX;
+  const wb = X.utils.book_new();
+  const ts = new Date().toLocaleString();
+
+  // helpers
+  function ti(id)   { const e = document.getElementById(id); return e ? (e.value || '') : ''; }
+  function tv(id)   { const e = document.getElementById(id); return e ? e.textContent.replace(/(\d)(TB|GB|PB)/g,'$1 $2').trim() : '—'; }
+  function tsel(id) { const e = document.getElementById(id); return e ? e.options[e.selectedIndex].text : '—'; }
+  function kv(l, v) { return [l, String(v ?? '')]; }
+  function blank()  { return ['']; }
+  function addSheet(rows, name) { X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet(rows), name); }
+
+  // ── Sheet: Environment ──────────────────────────────────────────────────
+  {
+    const hwSock = parseInt(ti('hw-sockets'))   || 2;
+    const hwCore = parseInt(ti('hw-cores'))     || 16;
+    const hwGHz  = parseFloat(ti('hw-ghz'))     || 2.4;
+    const hwRAM  = parseInt(ti('hw-ram'))       || 256;
+    const hwStor = parseFloat(ti('hw-storage')) || 10;
+    const hwHT   = ti('hw-ht') === 'yes';
+    const hwLog  = hwHT ? hwSock * hwCore * 2 : hwSock * hwCore;
+
+    let totVMs = 0, totVCPU = 0, totRAM = 0, totStorGB = 0;
+    groups.forEach(g => {
+      const n = Math.max(1, g.count || 1);
+      totVMs    += n;
+      totVCPU   += g.vcpu * n;
+      totRAM    += g.ram  * n;
+      totStorGB += g.storage * n;
+    });
+    const totStorTB = totStorGB / 1024;
+
+    const rows = [
+      ['MSP Toolbox — Environment', '', ts],
+      blank(),
+      ['SERVER PROFILE'],
+      kv('Name',           ti('hw-name') || '(not set)'),
+      kv('CPU',            `${hwSock}S × ${hwCore}C @ ${hwGHz} GHz  (${hwLog} logical)`),
+      kv('RAM',            `${hwRAM} GB`),
+      kv('Storage',        `${hwStor} TB`),
+      kv('Hypervisor',     tsel('hw-hypervisor')),
+      kv('Hyperthreading', hwHT ? 'Enabled' : 'Disabled'),
+      blank(),
+      ['VM WORKLOAD GROUPS'],
+      ['Group', 'OS', 'Count', 'vCPU/VM', 'Total vCPU', 'RAM/VM (GB)', 'Total RAM (GB)', 'Stor/VM (GB)', 'Total Stor (GB)', 'SQL Edition'],
+    ];
+
+    if (groups.length) {
+      groups.forEach(g => {
+        const n   = Math.max(1, g.count || 1);
+        const o   = OS_OPTS.find(x => x.v === g.os) || { l: '—' };
+        const sql = g.sql || (OS_OPTS.find(x => x.v === g.os) || {}).sql;
+        rows.push([g.name, o.l, n, g.vcpu, g.vcpu * n, g.ram, g.ram * n,
+                   g.storage, Math.round(g.storage * n), sql ? (g.sqlEdition || 'standard') : '']);
+      });
+    } else {
+      rows.push(['(no VM groups defined)']);
+    }
+
+    rows.push(blank(), ['TOTALS'],
+      kv('Total VMs',     totVMs),
+      kv('Total vCPUs',   totVCPU),
+      kv('Total RAM',     `${totRAM} GB`),
+      kv('Total Storage', totStorTB >= 1
+          ? `${Math.round(totStorTB * 100) / 100} TB`
+          : `${Math.round(totStorGB)} GB`),
+    );
+
+    if (groups.length) {
+      const opt = buildSpec(totVCPU, totRAM, totStorTB, 4, 1.25, 1.30, 8, 'opt');
+      const fit = buildSpec(totVCPU, totRAM, totStorTB, 8, 1.10, 1.15, 8, 'fit');
+      rows.push(blank(), ['RECOMMENDED HOST — OPTIMAL'],
+        kv('CPU',            `${opt.sockets}S × ${opt.coresPerSock}C  (${opt.totalCores} physical cores)`),
+        kv('RAM',            `${opt.ram} GB`),
+        kv('Storage',        `${opt.stor} TB`),
+        kv('vCPU:Core ratio',`${(totVCPU / opt.totalCores).toFixed(1)}:1`),
+      );
+      rows.push(blank(), ['RECOMMENDED HOST — FIT-FOR-PURPOSE'],
+        kv('CPU',            `${fit.sockets}S × ${fit.coresPerSock}C  (${fit.totalCores} physical cores)`),
+        kv('RAM',            `${fit.ram} GB`),
+        kv('Storage',        `${fit.stor} TB`),
+        kv('vCPU:Core ratio',`${(totVCPU / fit.totalCores).toFixed(1)}:1`),
+      );
+      rows.push(blank(), ['CURRENT HW UTILISATION'],
+        kv('CPU',     `${Math.round((totVCPU / hwLog)  * 100)}%  (${totVCPU} vCPU vs ${hwLog} logical)`),
+        kv('RAM',     `${Math.round((totRAM  / hwRAM)  * 100)}%  (${totRAM} GB vs ${hwRAM} GB)`),
+        kv('Storage', `${Math.round((totStorTB / hwStor) * 100)}%  (${Math.round(totStorTB * 100) / 100} TB vs ${hwStor} TB)`),
+      );
+    }
+
+    addSheet(rows, 'Environment');
+  }
+
+  // ── Sheet: RAID ────────────────────────────────────────────────────────
+  {
+    const fLevel   = tsel('r-level').split(' — ')[0];
+    const rLevel   = tsel('rv-level').split(' — ')[0];
+    const rvKnownU = document.getElementById('rv-known-unit').style.display === 'none'
+                     ? 'disks' : ti('rv-known-unit');
+
+    const rows = [
+      ['MSP Toolbox — Storage / RAID', '', ts],
+      blank(),
+      ['FORWARD RAID CALCULATOR'],
+      ['INPUTS'],
+      kv('Disks',         ti('r-disks')),
+      kv('Disk Capacity', `${ti('r-cap')} ${ti('r-unit')}`),
+      kv('RAID Level',    fLevel),
+      blank(),
+      ['RESULTS'],
+      kv('Usable Capacity',    tv('r-usable-val')),
+      kv('Formula',            tv('r-usable-formula')),
+      kv('Raw / Total',        tv('r-raw-val')),
+      kv('Fault Tolerance',    tv('r-fault-val')),
+      kv('Storage Efficiency', tv('r-eff-val')),
+      blank(),
+      ['TARGET CAPACITY PLANNER (Reverse RAID)'],
+      ['INPUTS'],
+      kv('Target Usable', `${ti('rv-target')} ${ti('rv-unit')}`),
+      kv('RAID Level',    rLevel),
+      kv('Solve Mode',    rvMode === 'count' ? 'Disk Count' : 'Disk Size'),
+      kv(tv('rv-known-label') || 'Known Value', `${ti('rv-known')} ${rvKnownU}`),
+      blank(),
+      ['RESULTS'],
+      kv(tv('rv-disks-lbl') || 'Result', tv('rv-disks-val')),
+      kv('Actual Usable',   tv('rv-usable-val')),
+      kv('Raw Capacity',    tv('rv-raw-val')),
+      kv('Fault Tolerance', tv('rv-fault-val')),
+    ];
+    const note = tv('rv-note');
+    if (note && note !== '—') rows.push(kv('Note', note));
+
+    addSheet(rows, 'RAID');
+  }
+
+  // ── Sheet: Migration ───────────────────────────────────────────────────
+  {
+    const migVMsN   = parseInt(ti('mig-vms'))          || 0;
+    const migSizeN  = parseFloat(ti('mig-size'))        || 0;
+    const migUnitV  = ti('mig-unit')                    || 'GB';
+    const migNetV   = ti('mig-net')                     || '10g';
+    const migMethV  = ti('mig-method')                  || 'veeam';
+    const migEffN   = parseFloat(ti('mig-efficiency'))  || 70;
+    const migCompN  = parseFloat(ti('mig-compression')) || 1.5;
+    const migConvRN = parseFloat(ti('mig-conv-rate'))   || 8;
+    const migOvhdN  = parseFloat(ti('mig-overhead'))    || 5;
+    let migLineMbps = MIG_LINE_MBPS[migNetV];
+    if (migNetV === 'custom') {
+      const cs = parseFloat(ti('mig-custom-speed')) || 0;
+      migLineMbps = ti('mig-custom-unit') === 'Gbps' ? cs * 1000 : cs;
+    }
+    const migNetLbl   = MIG_NET_LABELS[migNetV]
+                        || `Custom (${ti('mig-custom-speed')} ${ti('mig-custom-unit') || 'Mbps'})`;
+    const migMethLbl  = MIG_METHOD_LABELS[migMethV] || migMethV;
+    const migSizeGB   = migUnitV === 'TB' ? migSizeN * 1024 : migSizeN;
+    const migCompR    = migMethV === 'veeam' ? Math.max(1, migCompN) : 1.0;
+    const migEffMBps  = (migLineMbps / 8) * (migEffN / 100);
+    const migSendMB   = (migSizeGB * 1024) / migCompR;
+    const migNeedsConv = (ti('mig-src') === 'vmware' && ti('mig-tgt') === 'hyperv') ||
+                         (ti('mig-src') === 'hyperv' && ti('mig-tgt') === 'vmware') ||
+                          ti('mig-src') === 'physical';
+    const migIsLive   = migMethV === 'live';
+    const migXferSec  = migEffMBps > 0 ? migSendMB / migEffMBps : null;
+    const migConvSec  = (migNeedsConv && !migIsLive) ? (migSizeGB / migConvRN) * 60 : 0;
+    const migOvhSec   = migVMsN * migOvhdN * 60;
+    const migTotSec   = migXferSec !== null ? migXferSec + migConvSec + migOvhSec : null;
+
+    function xlFmt(sec) {
+      if (sec === null || !isFinite(sec)) return '—';
+      const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = Math.floor(sec % 60);
+      if (h > 0) return `${h}h ${m ? m + 'm' : ''}`.trim();
+      if (m > 0) return `${m}m ${s ? s + 's' : ''}`.trim();
+      return `${s}s`;
+    }
+
+    const rows = [
+      ['MSP Toolbox — Workload Migration', '', ts],
+      blank(),
+      ['INPUTS'],
+      kv('VMs',                migVMsN),
+      kv('Total Data',         `${migSizeN} ${migUnitV}`),
+      kv('Source Platform',    tsel('mig-src')),
+      kv('Target Platform',    tsel('mig-tgt')),
+      kv('Network Link',       `${migNetLbl}  (${(migLineMbps || 0).toLocaleString()} Mbps)`),
+      kv('Migration Method',   migMethLbl),
+      kv('Network Efficiency', `${migEffN}%`),
+      ...(migMethV === 'veeam' ? [kv('Compression Ratio', `${migCompN}:1`)] : []),
+      kv('Conversion Rate',    `${migConvRN} GB/min`),
+      kv('Overhead / VM',      `${migOvhdN} min`),
+      blank(),
+      ['RESULTS'],
+      kv('Effective Throughput', migEffMBps > 0
+          ? `${migEffMBps.toFixed(0)} MB/s  (${(migEffMBps * 3600 / 1024).toFixed(1)} GB/hr)` : '—'),
+      kv('Data to Transfer',    migSendMB >= 1024
+          ? `${(migSendMB / 1024).toFixed(0)} GB` : `${migSendMB.toFixed(0)} MB`),
+      kv('Transfer Time',       xlFmt(migXferSec)),
+      ...(migNeedsConv && !migIsLive && migConvSec > 0 ? [kv('Conversion Time', xlFmt(migConvSec))] : []),
+      kv('VM Overhead',         xlFmt(migOvhSec)),
+      blank(),
+      kv('TOTAL ESTIMATED DURATION', xlFmt(migTotSec)),
+    ];
+
+    addSheet(rows, 'Migration');
+  }
+
+  // ── Sheet: Network ─────────────────────────────────────────────────────
+  {
+    const rows = [['MSP Toolbox — Network', '', ts]];
+
+    const subInput = ti('sub-input');
+    const subResEl = document.getElementById('sub-results');
+    if (subInput && subResEl && subResEl.style.display !== 'none' && subResEl.children.length) {
+      rows.push(blank(), ['IP / SUBNET CALCULATOR'], kv('Input', subInput));
+      subResEl.querySelectorAll('.net-kv').forEach(el => {
+        const lbl = el.querySelector('.net-kv-label');
+        const val = el.querySelector('.net-kv-val');
+        if (lbl && val) rows.push([lbl.textContent.trim(), val.textContent.trim()]);
+      });
+    }
+
+    rows.push(blank(), ['VLAN PLANNER']);
+    if (vlanRows.length) {
+      rows.push(['VLAN ID', 'Name / Purpose', 'Subnet CIDR', 'Gateway', 'Notes']);
+      vlanRows.forEach(r => rows.push([r.vlanId || '', r.name || '', r.cidr || '', r.gw || '', r.notes || '']));
+    } else {
+      rows.push(['(no VLANs defined)']);
+    }
+
+    addSheet(rows, 'Network');
+  }
+
+  // ── Sheet: _data  (machine-readable, round-trip import) ───────────────
+  {
+    const full  = getExportText();
+    const match = full.match(/===CALC-DATA===\s*\n([\s\S]*?)\n===END-DATA===/);
+    const json  = match ? match[1].trim() : '{}';
+    addSheet([['json', json]], '_data');
+  }
+
+  X.writeFile(wb, `tool-box-${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
 </script>
 </body>
