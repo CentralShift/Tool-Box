@@ -11,6 +11,14 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
+## 2026-06-25 — Claude — Fix: light theme tokens now override Codex's later :root block (specificity bump)
+
+- Root cause: `[data-theme="light"]` and `:root` both have specificity (0,1,0); Codex's dark graphite `:root` block appears later in the file so it wins over the light token block in all cases — light mode tokens were completely ignored
+- Fix: changed the token-defining block selector from `[data-theme="light"]` to `:root[data-theme="light"]` (specificity 0,2,0) so it beats both `:root` blocks regardless of source order; descendant rules (`[data-theme="light"] body`, etc.) already exceed `:root` specificity and were not changed; no `[data-theme="dark"]` block exists so dark mode is unaffected
+- In light mode `--bg-card` now resolves to `#FFFFFF`, `--text-primary` to `#0F172A`; brace balance 1193/1193
+
+---
+
 ## 2026-06-25 — Claude — Fix: light theme now re-themes cards/panels/text, not just the page background
 
 - Root cause: Codex's operations-console CSS hardcoded 13 dark hex values directly on element rules (`.card-header`, `.vm-group`, `.topology-strip`, `.host-group`, `.calc-row`, etc.) that bypass the CSS-variable token system — these never flip on theme toggle; `[data-theme="light"]` token overrides are correct but were invisible to these elements
