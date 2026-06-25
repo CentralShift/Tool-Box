@@ -11,6 +11,14 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
+## 2026-06-25 — Claude — Fix: light theme now re-themes cards/panels/text, not just the page background
+
+- Root cause: Codex's operations-console CSS hardcoded 13 dark hex values directly on element rules (`.card-header`, `.vm-group`, `.topology-strip`, `.host-group`, `.calc-row`, etc.) that bypass the CSS-variable token system — these never flip on theme toggle; `[data-theme="light"]` token overrides are correct but were invisible to these elements
+- Fix part 1 — token block: updated `--text-code:#1D4ED8` → `#2C7A72` (dark teal for mono on white); added light-mode overrides for `--accent-blue-bright:#1A8A83`, `--accent-teal:#1B8080`, `--border-active:#1B8080`, `--focus-ring` so teal UI chrome is readable on light backgrounds
+- Fix part 2 — element rules: replaced all 13 hardcoded dark colors (`#0D1317`, `#0C1216`, `#0E151A`, `#10171C`, `#0D1518`, `#0A1014`, `#226D68/#4FB6AC`, `#83D8CF`, `#8FD4CC`, `#A5E8E0`, `#BFDBFE`, `#657477`) with CSS variables (`var(--bg-elevated)`, `var(--bg-surface)`, `var(--bg-base)`, `var(--accent-blue)`, `var(--accent-teal)`, `var(--text-code)`, `var(--accent-blue-bright)`, `var(--text-muted)`) across the ops-console and dashboard-refresh blocks; dark mode unchanged; brace balance 1193/1193
+
+---
+
 ## 2026-06-25 08:19 — Codex — Add operations-console UI and multi-host infrastructure modelling
 
 - Restyled MSP Toolbox toward Option B with flatter graphite surfaces, restrained teal status colour, technical spacing, text-only navigation, and responsive overflow fixes
