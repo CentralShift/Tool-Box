@@ -11,6 +11,21 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
+## 2026-06-25 08:19 — Codex — Add operations-console UI and multi-host infrastructure modelling
+
+- Restyled MSP Toolbox toward Option B with flatter graphite surfaces, restrained teal status colour, technical spacing, text-only navigation, and responsive overflow fixes
+- Added primary/additional standalone and clustered host groups, roles, per-group hardware, N+1 HA reserves, topology rendering, and multiple SAN/NAS/HCI storage arrays
+- Effective environment capacity now aggregates compute hosts, excludes backup-only CPU/RAM, counts shared storage once, and round-trips via v5 TXT/XLSX data; syntax, IDs, brace balance, and cluster/backup/SAN model tests pass
+
+---
+
+## 2026-06-25 07:35 — Codex — Save visual redesign concepts for persistent review
+
+- Added three UI concept PNGs under `visual-concepts/` so the light workbench, dark operations console, and editorial planner options remain accessible across devices
+- No application HTML, CSS, or JavaScript changed
+
+---
+
 ## 2026-06-24 — Claude — Fix: reference cards no longer clip at bottom in two-column layout
 
 - Root cause: `.right-col` is a flex column with `max-height`+`overflow-y:auto`; default `flex-shrink:1` on `.card` children lets the flex algorithm shrink tall cards below their content height, and `overflow:hidden` on `.card` clips the bottom — confirmed on RAID ("RAID 10 — High-I/O databases") and Migration ("Cold / Offline Copy") tabs

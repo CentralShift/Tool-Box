@@ -43,7 +43,8 @@ Both agents **must** update `CHANGELOG.md` whenever they change any file.
 - All CSS is inside the `<style>` block in `index.html`; all JS is inside the `<script>` block at the bottom.
 - CSS custom properties (design tokens) live on `:root`; light-theme overrides on `[data-theme="light"]`.
 - Tab switching: `switchTab(name)` — panels are `#tab-{name}`, buttons have `data-tab="{name}"` attribute.
-- Export: `getExportText()` → `.txt` download, clipboard copy, and PDF via jsPDF (CDN). Import reads the `===CALC-DATA===` JSON block (current version: **v4**) and calls `raidApplyImport(d)`.
+- Export: `getExportText()` → `.txt` download, clipboard copy, and PDF via jsPDF (CDN). Import reads the `===CALC-DATA===` JSON block (current version: **v5**) and calls `raidApplyImport(d)`.
+- Environment topology state: primary `#hw-*` host group plus module-level `hostGroups[]` and `sans[]`; `getInfrastructureModel()` applies cluster N+1 reserves and aggregates effective compute, RAM, local storage, and shared storage.
 - VLAN state: module-level `vlanRows[]` array + `vlanNid` counter.
 - VM group state: module-level `groups[]` array + `gid` counter.
 - Migration constants: `MIG_LINE_MBPS`, `MIG_METHOD_LABELS`, `MIG_NET_LABELS`.

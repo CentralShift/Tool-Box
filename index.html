@@ -438,6 +438,62 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .env-sync-badge.active{display:flex;}
 .env-sync-badge.manual{color:var(--text-muted);}
 .env-synced{border-color:rgba(96,165,250,0.45)!important;}
+
+/* ── Operations console visual system ───────────────────────────────────── */
+:root{
+  --bg-base:#0A0E12;--bg-surface:#0E1419;--bg-elevated:#121A20;--bg-card:#10171C;--bg-input:#0B1116;
+  --border-subtle:rgba(168,186,194,.12);--border-default:rgba(168,186,194,.22);--border-active:#4FB6AC;
+  --text-primary:#F3F6F5;--text-secondary:#B6C1C3;--text-muted:#758487;--text-code:#8FD4CC;
+  --accent-blue:#338A83;--accent-blue-bright:#67C9BF;--accent-teal:#4FB6AC;
+  --radius-sm:4px;--radius-md:5px;--radius-lg:6px;
+  --shadow-card:none;--focus-ring:0 0 0 3px rgba(79,182,172,.22);
+}
+body{background:var(--bg-base);}
+.app-header{background:#090D10;box-shadow:none;border-bottom-color:var(--border-default);}
+.logo-icon{display:none;}.app-sub{color:#657477;}.header-badge{border-radius:3px;}
+.tab-bar{background:#090D10;border-top-color:var(--border-subtle);}
+.tab-btn{border-radius:0;text-transform:none;letter-spacing:.01em;}
+.tab-btn.active{color:#A5E8E0;border-bottom-color:var(--accent-teal);}
+.main{grid-template-columns:minmax(0,1fr) 390px;gap:10px;padding:10px 14px 28px;}
+.left-col,.right-col{gap:10px;}
+.card,.rec-card,.lic-wrap,.log-wrap{background:var(--bg-card);border-color:var(--border-default);border-radius:4px;box-shadow:none;}
+.card-header{padding:11px 14px;background:#0D1317;border-bottom-color:var(--border-default);}
+.card-icon{display:none;}.card-title{font-size:13px;letter-spacing:.01em;}.card-desc{font-size:10px;}
+.card-body{padding:14px;}.fi,.fs{border-radius:3px;background:#0B1116;border-color:var(--border-default);}
+.fi:focus,.fs:focus{border-color:var(--accent-teal);box-shadow:var(--focus-ring);}
+.btn{border-radius:3px;}.btn-primary{background:#226D68;border-color:#4FB6AC;box-shadow:none;}
+.btn-primary:hover{background:#2B817A;box-shadow:none;transform:none;}.btn-secondary{background:#10171C;}
+.vm-group{border-radius:3px;background:#0E151A;}.vm-group-head{background:#0C1216;}
+.capacity-card{border-color:var(--border-default);}.capacity-card .card-header{background:#0D1317;}
+.capacity-dot{background:#61C98B;box-shadow:none;}.capacity-fill{background:#4FB6AC;}
+.capacity-pct{color:#83D8CF;}.capacity-track{height:5px;border-radius:0;}.capacity-fill{border-radius:0;}
+.recommended-mini-grid{border-radius:3px;}.capacity-verdict{border-radius:3px;}
+.env-console-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.env-console-kicker{font:700 10px/1 var(--font-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--accent-blue-bright);}
+.topology-strip{display:flex;align-items:stretch;gap:8px;padding:12px 14px;background:#0A1014;border-bottom:1px solid var(--border-default);overflow-x:auto;}
+.topology-node{min-width:150px;padding:9px 10px;border:1px solid var(--border-default);background:#0E151A;border-radius:3px;position:relative;}
+.topology-node::after{content:'→';position:absolute;right:-8px;top:50%;transform:translate(50%,-50%);color:var(--text-muted);z-index:2;}
+.topology-node:last-child::after{display:none;}.topology-node.storage{border-color:rgba(79,182,172,.45);}
+.topology-node-title{font-size:11px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.topology-node-meta{font:500 9px/1.5 var(--font-mono);color:var(--text-muted);margin-top:4px;}
+.infra-primary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px;}
+.infra-primary-grid .wide{grid-column:span 2;}
+.infra-subhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--border-subtle);}
+.infra-subhead-title{font:700 10px/1 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--text-secondary);}
+.host-groups,.san-list{display:flex;flex-direction:column;gap:8px;}
+.host-group,.san-row{border:1px solid var(--border-default);background:#0C1216;border-radius:3px;overflow:hidden;}
+.host-group-head,.san-row-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-bottom:1px solid var(--border-subtle);}
+.host-group-name,.san-row-name{font-size:11px;font-weight:700;color:var(--text-primary);}
+.host-group-tag{font:700 9px/1 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:#8FD4CC;border:1px solid rgba(79,182,172,.35);padding:3px 5px;border-radius:2px;}
+.host-group-grid,.san-row-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:10px;}
+.host-group-grid .wide,.san-row-grid .wide{grid-column:span 2;}
+.ha-option{display:flex;align-items:center;gap:7px;min-height:32px;color:var(--text-secondary);font-size:10px;}
+.ha-option input{accent-color:var(--accent-teal);}
+.empty-infra{padding:14px;border:1px dashed var(--border-default);color:var(--text-muted);font-size:11px;text-align:center;}
+.model-note{font-size:10px;color:var(--text-muted);line-height:1.55;margin-top:8px;}
+.calc-row{border-radius:3px;background:#0D1518;border-color:rgba(79,182,172,.25);}
+@media(max-width:900px){.infra-primary-grid,.host-group-grid,.san-row-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.main{grid-template-columns:1fr;}.right-col{display:flex;}}
+@media(max-width:560px){.infra-primary-grid,.host-group-grid,.san-row-grid{grid-template-columns:1fr;}.infra-primary-grid .wide,.host-group-grid .wide,.san-row-grid .wide{grid-column:span 1;}.topology-node{min-width:135px;}.main{width:100%;overflow:hidden;}.card{min-width:0;}.header-actions{max-width:100%;overflow-x:auto;flex-wrap:nowrap;}.vm-group-body{grid-template-columns:1fr 1fr;}.vm-group-body .span2{grid-column:1/-1;}.env-hardware .card-body>div[style*="grid-template-columns"]{grid-template-columns:1fr!important;}.env-hardware .span2{grid-column:span 1;}.calc-row{align-items:stretch;flex-direction:column;}.calc-row .btn{width:100%;}}
 </style>
 </head>
 <body>
@@ -447,25 +503,25 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
     <div class="logo-wrap">
       <div class="logo-icon">🧰</div>
       <div>
-        <div class="app-title">MSP Toolbox</div>
-        <div class="app-sub">My Environment</div>
+        <div class="app-title">MSP TOOLBOX</div>
+        <div class="app-sub">Infrastructure planning console</div>
       </div>
     </div>
     <div class="header-actions">
       <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle light / dark mode">🌙</button>
       <input type="file" id="import-file" accept=".txt,.xlsx" style="display:none;" onchange="raidHandleImport(event)">
-      <button class="btn btn-secondary btn-sm" onclick="raidImport()">📂 Import</button>
-      <button class="btn btn-secondary btn-sm" id="raid-copy-btn" onclick="raidCopyClipboard()">📋 Copy</button>
-      <button class="btn btn-primary btn-sm" onclick="raidExportTxt()">⬇ .txt</button>
-      <button class="btn btn-primary btn-sm" onclick="exportPDF()">📄 PDF</button>
-      <button class="btn btn-primary btn-sm" onclick="exportXlsx()">⬇ XLSX</button>
+      <button class="btn btn-secondary btn-sm" onclick="raidImport()">Import</button>
+      <button class="btn btn-secondary btn-sm" id="raid-copy-btn" onclick="raidCopyClipboard()">Copy</button>
+      <button class="btn btn-secondary btn-sm" onclick="raidExportTxt()">TXT</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportPDF()">PDF</button>
+      <button class="btn btn-primary btn-sm" onclick="exportXlsx()">XLSX</button>
     </div>
   </div>
   <nav class="tab-bar" role="tablist">
-    <button class="tab-btn active" data-tab="environment" onclick="switchTab('environment')" role="tab">🖥 Environment</button>
-    <button class="tab-btn" data-tab="storage" onclick="switchTab('storage')" role="tab">💾 Storage / RAID</button>
-    <button class="tab-btn" data-tab="migration" onclick="switchTab('migration')" role="tab">⏱ Migration</button>
-    <button class="tab-btn" data-tab="network" onclick="switchTab('network')" role="tab">🌐 Network</button>
+    <button class="tab-btn active" data-tab="environment" onclick="switchTab('environment')" role="tab">Environment</button>
+    <button class="tab-btn" data-tab="storage" onclick="switchTab('storage')" role="tab">Storage / RAID</button>
+    <button class="tab-btn" data-tab="migration" onclick="switchTab('migration')" role="tab">Migration</button>
+    <button class="tab-btn" data-tab="network" onclick="switchTab('network')" role="tab">Network</button>
   </nav>
 </header>
 <div id="import-err" style="display:none;background:rgba(239,68,68,0.08);border-bottom:1px solid rgba(239,68,68,0.2);color:#FCA5A5;font-size:12px;padding:8px 32px;"></div>
@@ -503,12 +559,57 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
         <div class="card-title-wrap">
           <div class="card-icon ci-teal">🔩</div>
           <div>
-            <div class="card-title">Server Profile</div>
-            <div class="card-desc">Define the host capacity used for fit and utilisation checks</div>
+            <div class="card-title">Infrastructure Model</div>
+            <div class="card-desc">Model standalone hosts, clusters, backup servers and shared storage</div>
           </div>
         </div>
       </div>
+      <div class="topology-strip" id="topology-strip" aria-label="Environment topology"></div>
       <div class="card-body">
+        <div class="env-console-toolbar" style="margin-bottom:12px;">
+          <div>
+            <div class="env-console-kicker">Primary host group</div>
+            <div class="model-note">Use additional groups below for mixed environments such as a two-node cluster plus a standalone backup host.</div>
+          </div>
+        </div>
+        <div class="infra-primary-grid">
+          <div class="fg">
+            <label class="fl">Deployment</label>
+            <select class="fs" id="hw-deployment" onchange="primaryTopologyChanged()">
+              <option value="standalone">Standalone server(s)</option>
+              <option value="cluster">Cluster</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label class="fl">Server Count</label>
+            <input type="number" class="fi" id="hw-count" value="1" min="1" step="1" oninput="renderTopology()">
+          </div>
+          <div class="fg">
+            <label class="fl">Role</label>
+            <select class="fs" id="hw-role" onchange="renderTopology()">
+              <option value="compute">Compute / virtualisation</option>
+              <option value="backup">Backup repository</option>
+              <option value="management">Management / utility</option>
+              <option value="mixed">Mixed workload</option>
+            </select>
+          </div>
+          <div class="fg" id="hw-cluster-wrap" style="display:none;">
+            <label class="fl">Cluster Name</label>
+            <input type="text" class="fi" id="hw-cluster" placeholder="e.g. Production Cluster" oninput="renderTopology()">
+          </div>
+          <label class="ha-option" id="hw-ha-wrap" style="display:none;grid-column:1/-1;">
+            <input type="checkbox" id="hw-ha-reserve" checked onchange="renderTopology()">
+            Reserve one cluster node for HA failover capacity (N+1)
+          </label>
+          <div class="fg wide">
+            <label class="fl">Storage Attachment</label>
+            <select class="fs" id="hw-storage-mode" onchange="renderTopology()">
+              <option value="local">Local storage only</option>
+              <option value="shared">Shared SAN / NAS only</option>
+              <option value="both">Local + shared storage</option>
+            </select>
+          </div>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
           <div class="fg span2">
             <label class="fl">Server Name / Model</label>
@@ -558,13 +659,31 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
             </select>
           </div>
         </div>
+
+        <div class="infra-subhead">
+          <div class="infra-subhead-title">Additional host groups</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn btn-secondary btn-sm" type="button" onclick="addHostGroup('standalone')">+ Standalone group</button>
+            <button class="btn btn-secondary btn-sm" type="button" onclick="addHostGroup('cluster')">+ Cluster</button>
+          </div>
+        </div>
+        <div class="host-groups" id="host-groups"></div>
+
+        <div class="infra-subhead">
+          <div>
+            <div class="infra-subhead-title">Shared SAN / NAS storage</div>
+            <div class="model-note">Shared capacity is counted once and may be attached to clustered or standalone hosts.</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" type="button" onclick="addSan()">+ Add storage array</button>
+        </div>
+        <div class="san-list" id="san-list"></div>
       </div>
     </div>
 
     <!-- Calculate -->
     <div class="calc-row">
       <div class="calc-hint">Enter VM workloads and hardware details above, then calculate.</div>
-      <button class="btn btn-primary btn-lg" onclick="calculate()">⚡ Calculate Refresh Spec</button>
+      <button class="btn btn-primary btn-lg" onclick="calculate()">Calculate environment</button>
     </div>
 
     <!-- Results -->
@@ -617,7 +736,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
           <div class="card-icon ci-blue">◫</div>
           <div>
             <div class="card-title">Capacity Summary</div>
-            <div class="card-desc">Current workload demand against this host</div>
+            <div class="card-desc">Workload demand against effective environment capacity</div>
           </div>
         </div>
         <div class="capacity-freshness"><span class="capacity-dot"></span><span id="capacity-updated">Ready</span></div>
@@ -1320,6 +1439,94 @@ let gid = 0;
 let calcLog = [];
 let logId = 0;
 const envSyncManual = new Set(); // tracks which synced fields the user has manually overridden
+let hostGroups = [];
+let hostGroupId = 0;
+let sans = [];
+let sanId = 0;
+
+function primaryTopologyChanged() {
+  const clustered = document.getElementById('hw-deployment').value === 'cluster';
+  document.getElementById('hw-cluster-wrap').style.display = clustered ? 'flex' : 'none';
+  document.getElementById('hw-ha-wrap').style.display = clustered ? 'flex' : 'none';
+  renderTopology();
+}
+
+function addHostGroup(mode='standalone') {
+  hostGroupId++;
+  hostGroups.push({id:hostGroupId,mode,name:mode==='cluster'?`Cluster ${hostGroupId}`:`Standalone Group ${hostGroupId}`,role:mode==='cluster'?'compute':'backup',count:mode==='cluster'?2:1,model:'',sockets:2,cores:16,ghz:2.4,ram:256,storage:10,hypervisor:'vmware',ht:true,haReserve:mode==='cluster',storageMode:mode==='cluster'?'shared':'local'});
+  renderHostGroups(); renderTopology();
+}
+
+function updateHostGroup(id, field, value) {
+  const g=hostGroups.find(x=>x.id===id); if(!g)return;
+  if(['count','sockets','cores','ram'].includes(field)) g[field]=Math.max(1,parseInt(value)||1);
+  else if(['ghz','storage'].includes(field)) g[field]=Math.max(0,parseFloat(value)||0);
+  else if(['ht','haReserve'].includes(field)) g[field]=!!value;
+  else g[field]=value;
+  if(field==='mode'&&value!=='cluster')g.haReserve=false;
+  renderHostGroups(); renderTopology();
+}
+
+function removeHostGroup(id){hostGroups=hostGroups.filter(x=>x.id!==id);renderHostGroups();renderTopology();}
+
+function renderHostGroups() {
+  const el=document.getElementById('host-groups'); if(!el)return;
+  if(!hostGroups.length){el.innerHTML='<div class="empty-infra">No additional groups. The primary host group above is included in capacity calculations.</div>';return;}
+  el.innerHTML=hostGroups.map(g=>`
+    <div class="host-group">
+      <div class="host-group-head"><div style="display:flex;align-items:center;gap:8px;min-width:0;"><span class="host-group-tag">${g.mode==='cluster'?'Cluster':'Standalone'}</span><span class="host-group-name">${esc(g.name)}</span></div><button class="btn btn-danger btn-sm" type="button" onclick="removeHostGroup(${g.id})">Remove</button></div>
+      <div class="host-group-grid">
+        <div class="fg wide"><label class="fl">Group / Cluster Name</label><input class="fi" value="${esc(g.name)}" onchange="updateHostGroup(${g.id},'name',this.value)"></div>
+        <div class="fg"><label class="fl">Deployment</label><select class="fs" onchange="updateHostGroup(${g.id},'mode',this.value)"><option value="standalone"${g.mode==='standalone'?' selected':''}>Standalone</option><option value="cluster"${g.mode==='cluster'?' selected':''}>Cluster</option></select></div>
+        <div class="fg"><label class="fl">Server Count</label><input type="number" class="fi" min="1" value="${g.count}" onchange="updateHostGroup(${g.id},'count',this.value)"></div>
+        <div class="fg"><label class="fl">Role</label><select class="fs" onchange="updateHostGroup(${g.id},'role',this.value)"><option value="compute"${g.role==='compute'?' selected':''}>Compute / virtualisation</option><option value="backup"${g.role==='backup'?' selected':''}>Backup repository</option><option value="management"${g.role==='management'?' selected':''}>Management / utility</option><option value="mixed"${g.role==='mixed'?' selected':''}>Mixed workload</option></select></div>
+        <div class="fg"><label class="fl">Model</label><input class="fi" value="${esc(g.model)}" placeholder="Server model" onchange="updateHostGroup(${g.id},'model',this.value)"></div>
+        <div class="fg"><label class="fl">CPU Sockets</label><input type="number" class="fi" min="1" value="${g.sockets}" onchange="updateHostGroup(${g.id},'sockets',this.value)"></div>
+        <div class="fg"><label class="fl">Cores / Socket</label><input type="number" class="fi" min="1" value="${g.cores}" onchange="updateHostGroup(${g.id},'cores',this.value)"></div>
+        <div class="fg"><label class="fl">CPU GHz</label><input type="number" class="fi" min="0.1" step="0.1" value="${g.ghz}" onchange="updateHostGroup(${g.id},'ghz',this.value)"></div>
+        <div class="fg"><label class="fl">RAM / Server (GB)</label><input type="number" class="fi" min="1" value="${g.ram}" onchange="updateHostGroup(${g.id},'ram',this.value)"></div>
+        <div class="fg"><label class="fl">Local Storage / Server (TB)</label><input type="number" class="fi" min="0" step="0.1" value="${g.storage}" onchange="updateHostGroup(${g.id},'storage',this.value)"></div>
+        <div class="fg"><label class="fl">Storage Attachment</label><select class="fs" onchange="updateHostGroup(${g.id},'storageMode',this.value)"><option value="local"${g.storageMode==='local'?' selected':''}>Local only</option><option value="shared"${g.storageMode==='shared'?' selected':''}>Shared SAN / NAS</option><option value="both"${g.storageMode==='both'?' selected':''}>Local + shared</option></select></div>
+        <label class="ha-option"><input type="checkbox" ${g.ht?'checked':''} onchange="updateHostGroup(${g.id},'ht',this.checked)"> Hyperthreading enabled</label>
+        ${g.mode==='cluster'?`<label class="ha-option"><input type="checkbox" ${g.haReserve?'checked':''} onchange="updateHostGroup(${g.id},'haReserve',this.checked)"> Reserve one node for HA (N+1)</label>`:''}
+      </div>
+    </div>`).join('');
+}
+
+function addSan(){sanId++;sans.push({id:sanId,name:`Shared Storage ${sanId}`,type:'san',protocol:'iscsi',usableTB:20,raid:'RAID 6',controllers:2});renderSans();renderTopology();}
+function updateSan(id,field,value){const s=sans.find(x=>x.id===id);if(!s)return;if(field==='usableTB')s[field]=Math.max(0,parseFloat(value)||0);else if(field==='controllers')s[field]=Math.max(1,parseInt(value)||1);else s[field]=value;renderSans();renderTopology();}
+function removeSan(id){sans=sans.filter(x=>x.id!==id);renderSans();renderTopology();}
+
+function renderSans(){
+  const el=document.getElementById('san-list');if(!el)return;
+  if(!sans.length){el.innerHTML='<div class="empty-infra">No shared storage arrays defined. Local host storage will be used.</div>';return;}
+  el.innerHTML=sans.map(s=>`
+    <div class="san-row"><div class="san-row-head"><span class="san-row-name">${esc(s.name)}</span><button class="btn btn-danger btn-sm" type="button" onclick="removeSan(${s.id})">Remove</button></div>
+      <div class="san-row-grid">
+        <div class="fg wide"><label class="fl">Array Name</label><input class="fi" value="${esc(s.name)}" onchange="updateSan(${s.id},'name',this.value)"></div>
+        <div class="fg"><label class="fl">Type</label><select class="fs" onchange="updateSan(${s.id},'type',this.value)"><option value="san"${s.type==='san'?' selected':''}>SAN</option><option value="nas"${s.type==='nas'?' selected':''}>NAS</option><option value="hci"${s.type==='hci'?' selected':''}>HCI / vSAN</option></select></div>
+        <div class="fg"><label class="fl">Protocol</label><select class="fs" onchange="updateSan(${s.id},'protocol',this.value)"><option value="iscsi"${s.protocol==='iscsi'?' selected':''}>iSCSI</option><option value="fc"${s.protocol==='fc'?' selected':''}>Fibre Channel</option><option value="nfs"${s.protocol==='nfs'?' selected':''}>NFS</option><option value="smb"${s.protocol==='smb'?' selected':''}>SMB</option><option value="nvmeof"${s.protocol==='nvmeof'?' selected':''}>NVMe-oF</option></select></div>
+        <div class="fg"><label class="fl">Usable Capacity</label><div class="iw"><input type="number" class="fi" min="0" step="0.1" value="${s.usableTB}" onchange="updateSan(${s.id},'usableTB',this.value)"><span class="iu">TB</span></div></div>
+        <div class="fg"><label class="fl">Protection</label><input class="fi" value="${esc(s.raid)}" placeholder="RAID 6 / erasure coding" onchange="updateSan(${s.id},'raid',this.value)"></div>
+        <div class="fg"><label class="fl">Controllers</label><input type="number" class="fi" min="1" value="${s.controllers}" onchange="updateSan(${s.id},'controllers',this.value)"></div>
+      </div></div>`).join('');
+}
+
+function readPrimaryHostGroup(){return {id:0,name:document.getElementById('hw-cluster').value||document.getElementById('hw-name').value||'Primary Host Group',mode:document.getElementById('hw-deployment').value,role:document.getElementById('hw-role').value,count:Math.max(1,parseInt(document.getElementById('hw-count').value)||1),model:document.getElementById('hw-name').value,sockets:parseInt(document.getElementById('hw-sockets').value)||2,cores:parseInt(document.getElementById('hw-cores').value)||16,ghz:parseFloat(document.getElementById('hw-ghz').value)||2.4,ram:parseInt(document.getElementById('hw-ram').value)||256,storage:parseFloat(document.getElementById('hw-storage').value)||0,hypervisor:document.getElementById('hw-hypervisor').value,ht:document.getElementById('hw-ht').value==='yes',haReserve:document.getElementById('hw-ha-reserve').checked,storageMode:document.getElementById('hw-storage-mode').value};}
+
+function getInfrastructureModel(){
+  const allGroups=[readPrimaryHostGroup(),...hostGroups];let logicalCPU=0,ramGB=0,localTB=0,serverCount=0,effectiveComputeHosts=0;
+  allGroups.forEach(g=>{const count=Math.max(1,g.count||1);serverCount+=count;const reserved=g.mode==='cluster'&&g.haReserve&&count>1?1:0;const usableCount=g.role==='backup'?0:Math.max(0,count-reserved);effectiveComputeHosts+=usableCount;logicalCPU+=usableCount*g.sockets*g.cores*(g.ht?2:1);ramGB+=usableCount*g.ram;if(g.storageMode!=='shared')localTB+=count*g.storage;});
+  const sharedTB=sans.reduce((sum,s)=>sum+(parseFloat(s.usableTB)||0),0);
+  return {groups:allGroups,sans:[...sans],logicalCPU,ramGB,localTB,sharedTB,storageTB:localTB+sharedTB,serverCount,effectiveComputeHosts};
+}
+
+function renderTopology(){
+  const el=document.getElementById('topology-strip');if(!el)return;const model=getInfrastructureModel();const roles={compute:'Compute',backup:'Backup',management:'Management',mixed:'Mixed'};
+  const hostNodes=model.groups.map(g=>`<div class="topology-node"><div class="topology-node-title">${esc(g.name||g.model||'Host group')}</div><div class="topology-node-meta">${g.count} host${g.count===1?'':'s'} · ${g.mode==='cluster'?'cluster':'standalone'}<br>${roles[g.role]||g.role}${g.mode==='cluster'&&g.haReserve?' · N+1 reserved':''}</div></div>`);
+  const storageNodes=model.sans.map(s=>`<div class="topology-node storage"><div class="topology-node-title">${esc(s.name)}</div><div class="topology-node-meta">${String(s.type).toUpperCase()} · ${String(s.protocol).toUpperCase()}<br>${s.usableTB} TB usable · ${esc(s.raid)}</div></div>`);
+  el.innerHTML=[...hostNodes,...storageNodes].join('');
+}
 
 // ── Group CRUD ────────────────────────────────────────────────────────────────
 function addVMGroup(name='') {
@@ -1435,19 +1642,18 @@ function calculate(skipScroll, syncCrossTabs) {
 
   const storTB = totalStorGB / 1024;
 
-  // Current hardware
-  const hwSock = parseInt(document.getElementById('hw-sockets').value)||2;
-  const hwCore = parseInt(document.getElementById('hw-cores').value)||16;
-  const hwGHz  = parseFloat(document.getElementById('hw-ghz').value)||2.4;
-  const hwRAM  = parseInt(document.getElementById('hw-ram').value)||256;
-  const hwStor = parseFloat(document.getElementById('hw-storage').value)||10;
-  const hwHT   = document.getElementById('hw-ht').value==='yes';
-
-  const hwTotalCores = hwSock * hwCore;
-  const hwLogical    = hwHT ? hwTotalCores*2 : hwTotalCores;
-  const util_cpu  = (totalvCPU / hwLogical) * 100;
-  const util_ram  = (totalRAM  / hwRAM)     * 100;
-  const util_stor = (storTB    / hwStor)    * 100;
+  // Current infrastructure: primary group + additional standalone/cluster groups + shared storage
+  const infra = getInfrastructureModel();
+  const primaryHost = infra.groups[0];
+  const hwSock = primaryHost.sockets;
+  const hwCore = primaryHost.cores;
+  const hwGHz  = primaryHost.ghz;
+  const hwRAM  = infra.ramGB;
+  const hwStor = infra.storageTB;
+  const hwLogical = infra.logicalCPU;
+  const util_cpu  = hwLogical > 0 ? (totalvCPU / hwLogical) * 100 : 100;
+  const util_ram  = hwRAM > 0 ? (totalRAM / hwRAM) * 100 : 100;
+  const util_stor = hwStor > 0 ? (storTB / hwStor) * 100 : 100;
 
   // Recommended spec
   const opt = buildSpec(totalvCPU, totalRAM, storTB, 4,  1.25, 1.30, 8,  'opt');
@@ -1465,8 +1671,9 @@ function calculate(skipScroll, syncCrossTabs) {
 
   // Log
   logCalculation({
-    hwName: document.getElementById('hw-name').value || 'Unnamed Server',
+    hwName: primaryHost.name || 'Unnamed Environment',
     hwSock, hwCore, hwRAM, hwStor,
+    infraSnapshot: {serverCount:infra.serverCount,effectiveComputeHosts:infra.effectiveComputeHosts,groups:infra.groups.map(g=>({...g})),sans:infra.sans.map(s=>({...s}))},
     totalVMs, totalvCPU, totalRAM, storTB,
     winVMs, sqlCount: sqlGroups.reduce((a,g)=>a+g.count,0),
     opt, fit,
@@ -1662,8 +1869,8 @@ function renderStats({totalVMs,totalvCPU,totalRAM,storTB,winVMs,sqlGroups,hwLogi
   `;
 
   document.getElementById('util-bars').innerHTML = `
-    <div class="util-section-lbl">Current Hardware Utilisation — if migrating to existing host</div>
-    ${ubar('CPU', util_cpu, `${totalvCPU} vCPUs vs ${hwLogical} logical CPUs on current server`)}
+    <div class="util-section-lbl">Effective Environment Utilisation — after cluster HA reserves</div>
+    ${ubar('CPU', util_cpu, `${totalvCPU} vCPUs vs ${hwLogical} effective logical CPUs across the environment`)}
     ${ubar('RAM', util_ram, `${totalRAM} GB required vs ${hwRAM} GB available`)}
     ${ubar('Storage', util_stor, `${Math.round(storTB*10)/10} TB required vs ${hwStor} TB available`)}
   `;
@@ -1966,6 +2173,13 @@ function infoIcon(tip) {
   gid++;
   groups.push({id:gid, name:'File / Print Servers', os:'windows-server', vcpu:2, ram:8, storage:200, count:1, sql:false, sqlEdition:'standard'});
   renderGroups();
+  renderHostGroups();
+  renderSans();
+  primaryTopologyChanged();
+  ['hw-name','hw-sockets','hw-cores','hw-ghz','hw-ram','hw-storage','hw-hypervisor','hw-ht'].forEach(function(id){
+    var field=document.getElementById(id);
+    if(field){field.addEventListener('input',renderTopology);field.addEventListener('change',renderTopology);}
+  });
 
   // When user manually edits a synced field, flip its badge to "manual override"
   ['mig-vms', 'mig-size', 'rv-target'].forEach(function(id) {
@@ -2436,15 +2650,25 @@ function getExportText() {
   }
 
   // ── Server / VM section ───────────────────────────────────────────────────
-  const hwName  = document.getElementById('hw-name').value.trim() || '(not set)';
-  const hwSockN = parseInt(ti('hw-sockets'))  || 2;
-  const hwCoreN = parseInt(ti('hw-cores'))    || 16;
-  const hwGHzN  = parseFloat(ti('hw-ghz'))   || 2.4;
-  const hwRAMN  = parseInt(ti('hw-ram'))      || 256;
-  const hwStorN = parseFloat(ti('hw-storage'))|| 10;
+  const infraModel = getInfrastructureModel();
+  const primaryHw = infraModel.groups[0];
+  const hwName  = primaryHw.name || '(not set)';
+  const hwSockN = primaryHw.sockets;
+  const hwCoreN = primaryHw.cores;
+  const hwGHzN  = primaryHw.ghz;
+  const hwRAMN  = infraModel.ramGB;
+  const hwStorN = infraModel.storageTB;
   const hwHyp   = tsel('hw-hypervisor');
   const hwHT    = ti('hw-ht') === 'yes' ? 'Enabled' : 'Disabled';
-  const hwLogical = ti('hw-ht') === 'yes' ? hwSockN*hwCoreN*2 : hwSockN*hwCoreN;
+  const hwLogical = infraModel.logicalCPU;
+  const infraLines = infraModel.groups.map(g =>
+    '  ' + g.name + ' — ' + g.count + ' × ' + (g.mode==='cluster'?'clustered':'standalone') +
+    ' ' + g.role + ' host(s); ' + g.sockets + 'S/' + g.cores + 'C; ' + g.ram + ' GB RAM/server; ' + g.storage + ' TB local/server' +
+    (g.mode==='cluster'&&g.haReserve?' (N+1 reserved)':'')
+  );
+  const sanLines = infraModel.sans.length ? infraModel.sans.map(s =>
+    '  ' + s.name + ' — ' + String(s.type).toUpperCase() + ' / ' + String(s.protocol).toUpperCase() + '; ' + s.usableTB + ' TB usable; ' + s.raid
+  ) : ['  (no shared storage defined)'];
 
   let totVMs=0, totVCPU=0, totRAM=0, totStorGB=0, totWin=0, totSQL=0;
   groups.forEach(g => {
@@ -2496,9 +2720,9 @@ function getExportText() {
     ];
     utilLines = [
       '  CURRENT HW UTILISATION (if migrating to existing host)',
-      row('  CPU:', Math.round((totVCPU/hwLogical)*100) + '%  (' + totVCPU + ' vCPUs vs ' + hwLogical + ' logical)'),
-      row('  RAM:', Math.round((totRAM/hwRAMN)*100) + '%  (' + totRAM + ' GB vs ' + hwRAMN + ' GB)'),
-      row('  Storage:', Math.round((totStorTB/hwStorN)*100) + '%  (' + storDisp + ' vs ' + hwStorN + ' TB)'),
+      row('  CPU:', (hwLogical>0?Math.round((totVCPU/hwLogical)*100):100) + '%  (' + totVCPU + ' vCPUs vs ' + hwLogical + ' logical)'),
+      row('  RAM:', (hwRAMN>0?Math.round((totRAM/hwRAMN)*100):100) + '%  (' + totRAM + ' GB vs ' + hwRAMN + ' GB)'),
+      row('  Storage:', (hwStorN>0?Math.round((totStorTB/hwStorN)*100):100) + '%  (' + storDisp + ' vs ' + hwStorN + ' TB)'),
     ];
   }
 
@@ -2633,6 +2857,14 @@ function getExportText() {
     row('  Storage:', hwStorN + ' TB'),
     row('  Hypervisor:', hwHyp),
     row('  Hyperthreading:', hwHT),
+    row('  Physical Servers:', String(infraModel.serverCount)),
+    row('  Effective Compute Hosts:', String(infraModel.effectiveComputeHosts)),
+    '',
+    '  HOST GROUPS',
+    ...infraLines,
+    '',
+    '  SHARED SAN / NAS',
+    ...sanLines,
     '',
     '  VM GROUPS (' + groups.length + ')',
     vmGroupLines,
@@ -2707,19 +2939,27 @@ function getExportText() {
     L,
   ].filter(l => l !== null).join('\n');
 
-  // Machine-readable block — v4 adds VLAN planner state
+  // Machine-readable block — v5 adds multi-host topology and shared storage state
   const data = {
-    v: 4,
+    v: 5,
     vmHw: {
       name:       document.getElementById('hw-name').value,
       sockets:    hwSockN,
       cores:      hwCoreN,
       ghz:        hwGHzN,
-      ram:        hwRAMN,
-      storage:    hwStorN,
+      ram:        primaryHw.ram,
+      storage:    primaryHw.storage,
       hypervisor: ti('hw-hypervisor'),
       ht:         ti('hw-ht'),
+      deployment: ti('hw-deployment'),
+      count:      parseInt(ti('hw-count')) || 1,
+      role:       ti('hw-role'),
+      cluster:    ti('hw-cluster'),
+      haReserve:  document.getElementById('hw-ha-reserve').checked,
+      storageMode:ti('hw-storage-mode'),
     },
+    hostGroups:  hostGroups.map(g => ({...g})),
+    sans:        sans.map(s => ({...s})),
     vmGroups:    groups.map(g => ({...g})),
     raidDisks:   parseFloat(ti('r-disks'))   || 0,
     raidCap:     parseFloat(ti('r-cap'))     || 0,
@@ -2921,7 +3161,24 @@ function raidApplyImport(d) {
     if (h.storage    != null) document.getElementById('hw-storage').value    = h.storage;
     if (h.hypervisor != null) document.getElementById('hw-hypervisor').value = h.hypervisor;
     if (h.ht         != null) document.getElementById('hw-ht').value         = h.ht;
+    if (h.deployment != null) document.getElementById('hw-deployment').value = h.deployment;
+    if (h.count      != null) document.getElementById('hw-count').value      = h.count;
+    if (h.role       != null) document.getElementById('hw-role').value       = h.role;
+    if (h.cluster    != null) document.getElementById('hw-cluster').value    = h.cluster;
+    if (h.haReserve != null) document.getElementById('hw-ha-reserve').checked = !!h.haReserve;
+    if (h.storageMode != null) document.getElementById('hw-storage-mode').value = h.storageMode;
   }
+  if (Array.isArray(d.hostGroups)) {
+    hostGroups = d.hostGroups.map((g,i)=>({...g,id:Number.isFinite(Number(g.id))?Number(g.id):i+1}));
+    hostGroupId = hostGroups.length ? Math.max(...hostGroups.map(g=>g.id)) : 0;
+  } else { hostGroups = []; hostGroupId = 0; }
+  if (Array.isArray(d.sans)) {
+    sans = d.sans.map((s,i)=>({...s,id:Number.isFinite(Number(s.id))?Number(s.id):i+1}));
+    sanId = sans.length ? Math.max(...sans.map(s=>s.id)) : 0;
+  } else { sans = []; sanId = 0; }
+  renderHostGroups();
+  renderSans();
+  primaryTopologyChanged();
   if (Array.isArray(d.vmGroups)) {
     groups = d.vmGroups.map(g => ({...g}));
     gid    = groups.length ? Math.max(...groups.map(g => g.id)) : 0;
@@ -3268,13 +3525,15 @@ function exportXlsx() {
 
   // ── Sheet: Environment ──────────────────────────────────────────────────
   {
-    const hwSock = parseInt(ti('hw-sockets'))   || 2;
-    const hwCore = parseInt(ti('hw-cores'))     || 16;
-    const hwGHz  = parseFloat(ti('hw-ghz'))     || 2.4;
-    const hwRAM  = parseInt(ti('hw-ram'))       || 256;
-    const hwStor = parseFloat(ti('hw-storage')) || 10;
-    const hwHT   = ti('hw-ht') === 'yes';
-    const hwLog  = hwHT ? hwSock * hwCore * 2 : hwSock * hwCore;
+    const infra  = getInfrastructureModel();
+    const primary = infra.groups[0];
+    const hwSock = primary.sockets;
+    const hwCore = primary.cores;
+    const hwGHz  = primary.ghz;
+    const hwRAM  = infra.ramGB;
+    const hwStor = infra.storageTB;
+    const hwHT   = primary.ht;
+    const hwLog  = infra.logicalCPU;
 
     let totVMs = 0, totVCPU = 0, totRAM = 0, totStorGB = 0;
     groups.forEach(g => {
@@ -3290,12 +3549,21 @@ function exportXlsx() {
       ['MSP Toolbox — Environment', '', ts],
       blank(),
       ['SERVER PROFILE'],
-      kv('Name',           ti('hw-name') || '(not set)'),
+      kv('Primary Group',  primary.name || '(not set)'),
+      kv('Deployment',     `${primary.mode} · ${primary.count} server(s) · ${primary.role}`),
       kv('CPU',            `${hwSock}S × ${hwCore}C @ ${hwGHz} GHz  (${hwLog} logical)`),
       kv('RAM',            `${hwRAM} GB`),
       kv('Storage',        `${hwStor} TB`),
       kv('Hypervisor',     tsel('hw-hypervisor')),
       kv('Hyperthreading', hwHT ? 'Enabled' : 'Disabled'),
+      blank(),
+      ['HOST GROUPS'],
+      ['Name','Deployment','Role','Servers','Model','Sockets','Cores/Socket','RAM/Server (GB)','Local Storage/Server (TB)','Storage Attachment','N+1 Reserve'],
+      ...infra.groups.map(g=>[g.name,g.mode,g.role,g.count,g.model,g.sockets,g.cores,g.ram,g.storage,g.storageMode,g.mode==='cluster'&&g.haReserve?'Yes':'No']),
+      blank(),
+      ['SHARED SAN / NAS'],
+      ['Name','Type','Protocol','Usable TB','Protection','Controllers'],
+      ...(infra.sans.length?infra.sans.map(s=>[s.name,s.type,s.protocol,s.usableTB,s.raid,s.controllers]):[['(none defined)']]),
       blank(),
       ['VM WORKLOAD GROUPS'],
       ['Group', 'OS', 'Count', 'vCPU/VM', 'Total vCPU', 'RAM/VM (GB)', 'Total RAM (GB)', 'Stor/VM (GB)', 'Total Stor (GB)', 'SQL Edition'],
@@ -3338,9 +3606,9 @@ function exportXlsx() {
         kv('vCPU:Core ratio',`${(totVCPU / fit.totalCores).toFixed(1)}:1`),
       );
       rows.push(blank(), ['CURRENT HW UTILISATION'],
-        kv('CPU',     `${Math.round((totVCPU / hwLog)  * 100)}%  (${totVCPU} vCPU vs ${hwLog} logical)`),
-        kv('RAM',     `${Math.round((totRAM  / hwRAM)  * 100)}%  (${totRAM} GB vs ${hwRAM} GB)`),
-        kv('Storage', `${Math.round((totStorTB / hwStor) * 100)}%  (${Math.round(totStorTB * 100) / 100} TB vs ${hwStor} TB)`),
+        kv('CPU',     `${hwLog>0?Math.round((totVCPU / hwLog)*100):100}%  (${totVCPU} vCPU vs ${hwLog} logical)`),
+        kv('RAM',     `${hwRAM>0?Math.round((totRAM / hwRAM)*100):100}%  (${totRAM} GB vs ${hwRAM} GB)`),
+        kv('Storage', `${hwStor>0?Math.round((totStorTB / hwStor)*100):100}%  (${Math.round(totStorTB * 100) / 100} TB vs ${hwStor} TB)`),
       );
     }
 
