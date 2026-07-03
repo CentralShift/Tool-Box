@@ -11,6 +11,14 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
+## 2026-07-03 — Claude — Add Proposed Build Validator to Environment tab
+
+- New full-width card below the hardware/capacity content: optional proposed server(s) (hosts, sockets, cores, RAM/host, local storage/host, hyperthreading, cluster + N+1 HA reserve — same reserve logic as existing host groups) and optional proposed SAN/NAS usable TB; either can be entered alone or together
+- Validates the proposed build's logical cores / RAM / storage against the *current workload demand* (VM Workload Groups totals, not existing hardware); reuses the exact Sizing Guidelines thresholds (CPU 6:1/10:1, RAM 1:1/1.1:1, storage +30%/+15% buffers) via `computeProposedValidation()`, a single calc function shared by the live panel, TXT/PDF export, and XLSX export; live-updates on any input change (both proposed-build fields and VM group edits)
+- Export/import schema bumped v5→v6 (adds `pbv` block); v5 imports still load correctly with proposed-build defaults; brace balance 1320/1320, Node logic check confirmed optimal/fit/insufficient bands and verdict text for sample builds
+
+---
+
 ## 2026-06-25 — Claude — Fix: light theme tokens now override Codex's later :root block (specificity bump)
 
 - Root cause: `[data-theme="light"]` and `:root` both have specificity (0,1,0); Codex's dark graphite `:root` block appears later in the file so it wins over the light token block in all cases — light mode tokens were completely ignored
