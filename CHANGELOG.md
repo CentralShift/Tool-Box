@@ -11,7 +11,11 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
-## 2026-07-03 — Claude — Add Proposed Build Validator to Environment tab
+## 2026-07-15 — Claude — Add Licensing tab: Windows Server 2025 + SQL Server 2022 calculators
+
+- New tab between Migration and Network: Windows Server 2025 per-core calculator (min 8 cores/proc, 16/host; Standard stacks full core-sets at 2 VMs/set vs Datacenter unlimited; per-host pack maths since licenses can't span hosts; VM-mobility toggle; auto/forced edition per row with break-even note) and SQL Server 2022 per-VM calculator (min 4 cores/VM, 2-core packs only, Standard 24-core cap warning, Express-eligibility hint); every requirement shown as cheapest 16-core + 2-core mix AND 2-core-packs-only equivalent
+- Editable pricing card (defaults ≈ Microsoft USD list, reset button, currency label), live Cost Summary shopping list, licensing rules reference card with 2016/SQL EOL dates, "Pull from Environment" buttons import host groups + SQL-flagged VM groups; Environment ref cards now link to the tab
+- Export/import schema v6→v7 (adds `lic` block; v6/v5 imports keep defaults — verified in-browser); LICENSING section added to TXT/PDF export and a Licensing sheet to XLSX; brace balance 1488/1488, node --check passes, 13 Node logic tests + browser round-trip/export tests pass
 
 - New full-width card below the hardware/capacity content: optional proposed server(s) (hosts, sockets, cores, RAM/host, local storage/host, hyperthreading, cluster + N+1 HA reserve — same reserve logic as existing host groups) and optional proposed SAN/NAS usable TB; either can be entered alone or together
 - Validates the proposed build's logical cores / RAM / storage against the *current workload demand* (VM Workload Groups totals, not existing hardware); reuses the exact Sizing Guidelines thresholds (CPU 6:1/10:1, RAM 1:1/1.1:1, storage +30%/+15% buffers) via `computeProposedValidation()`, a single calc function shared by the live panel, TXT/PDF export, and XLSX export; live-updates on any input change (both proposed-build fields and VM group edits)

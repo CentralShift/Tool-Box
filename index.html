@@ -513,6 +513,30 @@ body{background:var(--bg-base);}
 .pbv-row-delta{font-size:10px;color:var(--text-secondary);margin-top:3px;line-height:1.5;font-family:var(--font-mono);}
 .rb-bad{background:rgba(239,68,68,0.15);color:#F87171;border:1px solid rgba(239,68,68,0.3);}
 @media(max-width:900px){.pbv-cols{grid-template-columns:1fr;}}
+
+/* ── Licensing tab ── */
+.lic-price-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.lic-result{border:1px solid var(--border-default);background:var(--bg-elevated);border-radius:3px;padding:11px 13px;margin-top:10px;}
+.lic-result-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+.lic-result-name{font-size:12px;font-weight:700;color:var(--text-primary);}
+.lic-opt{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:5px 0;border-top:1px dashed var(--border-subtle);}
+.lic-opt:first-of-type{border-top:none;}
+.lic-opt-lbl{font-size:11px;color:var(--text-secondary);min-width:110px;}
+.lic-opt-packs{font:500 11px/1.5 var(--font-mono);color:var(--text-code);flex:1;}
+.lic-opt-cost{font:700 12px/1.5 var(--font-mono);color:var(--text-primary);white-space:nowrap;}
+.lic-pill{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;letter-spacing:0.03em;}
+.lic-pill.good{background:rgba(16,185,129,0.12);color:#34D399;}
+.lic-pill.warn{background:rgba(251,191,36,0.12);color:#FBBF24;}
+.lic-pill.bad{background:rgba(239,68,68,0.12);color:#F87171;}
+.lic-note{font-size:10px;color:var(--text-muted);margin-top:5px;line-height:1.5;}
+.lic-sum-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed var(--border-subtle);font-size:12px;color:var(--text-secondary);}
+.lic-sum-row .val{font:600 12px/1.5 var(--font-mono);color:var(--text-primary);white-space:nowrap;}
+.lic-sum-total{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:10px 0 2px;font-size:13px;font-weight:700;color:var(--text-primary);}
+.lic-sum-total .val{font:800 15px/1.4 var(--font-mono);color:var(--text-code);}
+[data-theme="light"] .lic-pill.good{background:rgba(5,150,105,0.12);color:#047857;}
+[data-theme="light"] .lic-pill.warn{background:rgba(180,83,9,0.10);color:#B45309;}
+[data-theme="light"] .lic-pill.bad{background:rgba(220,38,38,0.10);color:#B91C1C;}
+@media(max-width:700px){.lic-price-grid{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
@@ -540,6 +564,7 @@ body{background:var(--bg-base);}
     <button class="tab-btn active" data-tab="environment" onclick="switchTab('environment')" role="tab">Environment</button>
     <button class="tab-btn" data-tab="storage" onclick="switchTab('storage')" role="tab">Storage / RAID</button>
     <button class="tab-btn" data-tab="migration" onclick="switchTab('migration')" role="tab">Migration</button>
+    <button class="tab-btn" data-tab="licensing" onclick="switchTab('licensing')" role="tab">Licensing</button>
     <button class="tab-btn" data-tab="network" onclick="switchTab('network')" role="tab">Network</button>
   </nav>
 </header>
@@ -850,7 +875,7 @@ body{background:var(--bg-base);}
             Covers <strong style="color:var(--text-primary);">unlimited Windows VMs</strong>. Same per-core licensing model. Better value when running 3+ Windows VMs on a host.
           </div>
           <div style="font-size:11px;color:var(--text-muted);line-height:1.6;padding:8px 10px;background:rgba(255,255,255,0.025);border-radius:var(--radius-sm);">
-            ℹ️ Linux VMs and non-Windows guests do not consume Windows Server licenses. Licensing applies per physical host.
+            ℹ️ Linux VMs and non-Windows guests do not consume Windows Server licenses. Licensing applies per physical host. <a href="#" onclick="switchTab('licensing');return false;" style="color:var(--accent-blue-bright);">Full calculator → Licensing tab</a>
           </div>
         </div>
       </div>
@@ -878,7 +903,7 @@ body{background:var(--bg-base);}
             Per-VM core licensing. Min <strong style="color:var(--text-primary);">4 cores/VM</strong>. No limits on cores, sockets, or RAM. Required for large workloads.
           </div>
           <div style="font-size:11px;color:var(--text-muted);line-height:1.6;padding:8px 10px;background:rgba(255,255,255,0.025);border-radius:var(--radius-sm);">
-            ℹ️ Software Assurance (SA) required for license mobility across hosts. Consider Azure Hybrid Benefit if moving to cloud.
+            ℹ️ Software Assurance (SA) required for license mobility across hosts. Consider Azure Hybrid Benefit if moving to cloud. <a href="#" onclick="switchTab('licensing');return false;" style="color:var(--accent-blue-bright);">Full calculator → Licensing tab</a>
           </div>
         </div>
       </div>
@@ -1403,6 +1428,136 @@ body{background:var(--bg-base);}
 </div><!-- /migration -->
 </div><!-- /tab-migration -->
 
+<div id="tab-licensing" class="tab-panel">
+<div class="main">
+  <div class="left-col">
+
+    <!-- Windows Server 2025 Licensing -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-wrap">
+          <div class="card-icon ci-blue">🪟</div>
+          <div>
+            <div class="card-title">Windows Server 2025 Licensing</div>
+            <div class="card-desc">Per-core host licensing — Standard vs Datacenter, priced as 16-core licenses and 2-core packs</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="licPullFromEnvironment()" title="Import host groups and Windows VM counts from the Environment tab">↩ Pull from Environment</button>
+      </div>
+      <div class="card-body" style="padding-bottom:0;">
+        <div id="lic-win-rows"></div>
+      </div>
+      <div class="add-vm-foot">
+        <button class="btn btn-secondary" onclick="licAddWinRow()">＋ Add host group</button>
+        <span style="font-size:12px;color:var(--text-muted);">One row per host (or group of identical hosts)</span>
+      </div>
+      <div style="border-top:1px solid var(--border-subtle);padding:18px 24px;" id="lic-win-summary"></div>
+    </div>
+
+    <!-- SQL Server 2022 Licensing -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-wrap">
+          <div class="card-icon ci-purple">🗄️</div>
+          <div>
+            <div class="card-title">SQL Server 2022 Licensing</div>
+            <div class="card-desc">Per-VM core licensing — sold in 2-core packs only, minimum 4 core licenses per VM</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="licPullSqlFromEnvironment()" title="Import SQL-flagged VM groups from the Environment tab">↩ Pull from Environment</button>
+      </div>
+      <div class="card-body" style="padding-bottom:0;">
+        <div id="lic-sql-rows"></div>
+      </div>
+      <div class="add-vm-foot">
+        <button class="btn btn-secondary" onclick="licAddSqlRow()">＋ Add SQL VM group</button>
+        <span style="font-size:12px;color:var(--text-muted);">One row per SQL VM (or group of identical SQL VMs)</span>
+      </div>
+      <div style="border-top:1px solid var(--border-subtle);padding:18px 24px;" id="lic-sql-summary"></div>
+    </div>
+
+  </div><!-- /left-col -->
+
+  <div class="right-col">
+
+    <!-- Cost Summary -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-wrap">
+          <div class="card-icon ci-teal">🧾</div>
+          <div>
+            <div class="card-title">Cost Summary</div>
+            <div class="card-desc">Combined shopping list &amp; totals</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body" style="padding:16px 20px;" id="lic-total-summary"></div>
+    </div>
+
+    <!-- License Pricing -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-wrap">
+          <div class="card-icon ci-blue">💲</div>
+          <div>
+            <div class="card-title">License Pricing</div>
+            <div class="card-desc">Editable — defaults are approx. Microsoft USD list prices</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="licResetPrices()" title="Restore default list prices">Reset</button>
+      </div>
+      <div class="card-body" style="padding:16px 20px;">
+        <div class="lic-price-grid">
+          <div class="fg"><label class="fl">Currency Label</label><input class="fi" id="lic-p-cur" value="USD" maxlength="6" oninput="licPriceUpdate('cur',this.value)"></div>
+          <div class="fg"><label class="fl">WS Standard — 16-core</label><input type="number" class="fi" id="lic-p-wsStd16" min="0" step="1" oninput="licPriceUpdate('wsStd16',this.value)"></div>
+          <div class="fg"><label class="fl">WS Standard — 2-core pack</label><input type="number" class="fi" id="lic-p-wsStd2" min="0" step="1" oninput="licPriceUpdate('wsStd2',this.value)"></div>
+          <div class="fg"><label class="fl">WS Datacenter — 16-core</label><input type="number" class="fi" id="lic-p-wsDc16" min="0" step="1" oninput="licPriceUpdate('wsDc16',this.value)"></div>
+          <div class="fg"><label class="fl">WS Datacenter — 2-core pack</label><input type="number" class="fi" id="lic-p-wsDc2" min="0" step="1" oninput="licPriceUpdate('wsDc2',this.value)"></div>
+          <div class="fg"><label class="fl">SQL Standard — 2-core pack</label><input type="number" class="fi" id="lic-p-sqlStd2" min="0" step="1" oninput="licPriceUpdate('sqlStd2',this.value)"></div>
+          <div class="fg"><label class="fl">SQL Enterprise — 2-core pack</label><input type="number" class="fi" id="lic-p-sqlEnt2" min="0" step="1" oninput="licPriceUpdate('sqlEnt2',this.value)"></div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);line-height:1.6;padding:8px 10px;margin-top:12px;background:rgba(255,255,255,0.025);border-radius:var(--radius-sm);">
+          ℹ️ Replace with your reseller / CSP pricing (e.g. AUD ex-GST). All calculations update live.
+        </div>
+      </div>
+    </div>
+
+    <!-- Licensing Rules Reference -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-wrap">
+          <div class="card-icon ci-purple">📘</div>
+          <div>
+            <div class="card-title">Licensing Rules</div>
+            <div class="card-desc">Windows Server 2025 &amp; SQL Server 2022</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body" style="padding:16px 20px;">
+        <div class="ref-block">
+          <div class="ref-box">
+            <div class="ref-box-title" style="color:var(--accent-blue-bright);">Windows Server 2025 — per core</div>
+            License <strong style="color:var(--text-primary);">all physical cores</strong> on each host: minimum 8 core licenses per processor, 16 per host. <strong style="color:var(--text-primary);">Standard</strong> grants 2 Windows Server VMs per full core-set — stack complete sets for more VMs. <strong style="color:var(--text-primary);">Datacenter</strong> covers unlimited VMs. Licenses cannot be split across hosts.
+          </div>
+          <div class="ref-box">
+            <div class="ref-box-title" style="color:#34D399;">SQL Server 2022 — per VM</div>
+            License all vCores in each SQL VM, minimum <strong style="color:var(--text-primary);">4 core licenses per VM</strong>, sold in 2-core packs only. <strong style="color:var(--text-primary);">Standard</strong> caps at 24 cores / 128 GB RAM per instance. <strong style="color:var(--text-primary);">Enterprise</strong> removes limits; licensing all physical host cores with Enterprise + SA allows unlimited SQL VMs on that host. Software Assurance is required for license mobility between hosts.
+          </div>
+          <div class="ref-box">
+            <div class="ref-box-title" style="color:#FBBF24;">SQL Express — free, but limited</div>
+            10 GB max per database, ~1.4 GB buffer pool memory, 4 cores / 1 socket max. Fine for small workloads — anything beyond these limits must move to Standard (full per-VM core licensing applies).
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);line-height:1.6;padding:8px 10px;background:rgba(255,255,255,0.025);border-radius:var(--radius-sm);">
+            ⚠️ End of support: Windows Server 2016 — 12 Jan 2027 · SQL Server 2016 — 14 Jul 2026 · SQL Server 2014 — already ended (Jul 2024). Prices shown are estimates only — confirm with your licensing provider.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /right-col -->
+</div>
+</div><!-- /tab-licensing -->
+
 <div id="tab-network" class="tab-panel">
 <div style="max-width:1440px;margin:0 auto;padding:24px 32px;">
   <div class="net-grid">
@@ -1513,6 +1668,11 @@ let proposedBuild = {
   sockets: 2, cores: 12, ram: 128, storage: 2, ht: true,
   sanEnabled: true, sanUsableTB: 10,
 };
+// Licensing tab state (calculator functions live in the Licensing section below)
+const LIC_DEFAULT_PRICES = { cur:'USD', wsStd16:1176, wsStd2:148, wsDc16:6771, wsDc2:847, sqlStd2:3945, sqlEnt2:15123 };
+let licPrices  = { ...LIC_DEFAULT_PRICES };
+let licWinRows = [], licWinId = 0;
+let licSqlRows = [], licSqlId = 0;
 
 function primaryTopologyChanged() {
   const clustered = document.getElementById('hw-deployment').value === 'cluster';
@@ -2433,6 +2593,12 @@ function infoIcon(tip) {
   renderSans();
   renderProposedBuild();
   primaryTopologyChanged();
+  licWinId++;
+  licWinRows.push({id:licWinId, name:'Production Hosts', hosts:2, sockets:2, cores:12, vms:6, mobility:true, edition:'auto'});
+  licSqlId++;
+  licSqlRows.push({id:licSqlId, name:'Database Servers', count:1, vcores:8, edition:'standard', cur:'SQL 2016 Standard'});
+  licSyncPriceInputs();
+  licRenderAll();
   ['hw-name','hw-sockets','hw-cores','hw-ghz','hw-ram','hw-storage','hw-hypervisor','hw-ht'].forEach(function(id){
     var field=document.getElementById(id);
     if(field){field.addEventListener('input',renderTopology);field.addEventListener('change',renderTopology);}
@@ -3201,6 +3367,10 @@ function getExportText() {
     '',
     L,
     '',
+    ...licExportSection(row, D),
+    '',
+    L,
+    '',
     '  VLAN PLANNER',
     D,
     ...(vlanRows.length
@@ -3215,9 +3385,9 @@ function getExportText() {
     L,
   ].filter(l => l !== null).join('\n');
 
-  // Machine-readable block — v6 adds the Proposed Build Validator; v5 fields unchanged for back-compat
+  // Machine-readable block — v7 adds the Licensing tab; v6 (Proposed Build Validator) and v5 fields unchanged for back-compat
   const data = {
-    v: 6,
+    v: 7,
     vmHw: {
       name:       document.getElementById('hw-name').value,
       sockets:    hwSockN,
@@ -3264,6 +3434,11 @@ function getExportText() {
     },
     vlans: vlanRows.map(r => ({ vlanId: r.vlanId, name: r.name, cidr: r.cidr, gw: r.gw, notes: r.notes })),
     pbv: { ...proposedBuild },
+    lic: {
+      prices: { ...licPrices },
+      win: licWinRows.map(r => ({ ...r })),
+      sql: licSqlRows.map(r => ({ ...r })),
+    },
   };
 
   return lines + '\n===CALC-DATA===\n' + JSON.stringify(data) + '\n===END-DATA===\n';
@@ -3306,6 +3481,320 @@ async function raidCopyClipboard() {
     btn.style.color = '';
     btn.style.borderColor = '';
   }, 2000);
+}
+
+// ── Licensing Calculator (Windows Server 2025 + SQL Server 2022) ─────────────
+// Rules encoded:
+//  WS 2025 per-core: min 8 core licenses/processor, min 16/host; Standard = 2 VMs
+//  per full core-set (stack sets for more VMs); Datacenter = unlimited VMs.
+//  Licenses cannot span hosts, so pack maths is per host × host count.
+//  SQL 2022 per-VM: all vCores licensed, min 4/VM, 2-core packs only;
+//  Standard capped at 24 cores / 128 GB per instance.
+//  State (licPrices / licWinRows / licSqlRows) is declared in the Data section at the top.
+
+function licMoney(n){ return (licPrices.cur||'').trim() + ' ' + Math.round(n).toLocaleString('en-US'); }
+function licMixLbl(m){
+  const parts = [];
+  if (m.n16) parts.push(m.n16 + '× 16-core');
+  if (m.n2)  parts.push(m.n2  + '× 2-core pack' + (m.n2 > 1 ? 's' : ''));
+  return parts.length ? parts.join('  +  ') : '—';
+}
+
+// Cheapest combination of 16-core licenses + 2-core packs covering `cores` core licenses (per host).
+function licBestMix(cores, p16, p2) {
+  let best = null;
+  for (let n16 = 0; n16 <= Math.ceil(cores / 16); n16++) {
+    const rem = Math.max(0, cores - n16 * 16);
+    const n2 = Math.ceil(rem / 2);
+    const cost = n16 * p16 + n2 * p2;
+    if (!best || cost < best.cost - 1e-9) best = { n16, n2, cost };
+  }
+  return best;
+}
+function licTwoCoreOnly(cores, p2) { const n2 = Math.ceil(cores / 2); return { n16: 0, n2, cost: n2 * p2 }; }
+
+function licWinCompute(r) {
+  const hosts        = Math.max(1, r.hosts || 1);
+  const coresPerHost = Math.max(16, Math.max(1, r.sockets || 1) * Math.max(8, r.cores || 1));
+  const vms          = Math.max(0, r.vms || 0);
+  // With VM mobility (cluster / live migration) every host must be licensed for all VMs that could land on it
+  const vmsPerHost   = r.mobility ? vms : Math.ceil(vms / hosts);
+  const stdSets      = Math.max(1, Math.ceil(vmsPerHost / 2));
+  const stdCores     = stdSets * coresPerHost;
+  const dcCores      = coresPerHost;
+  const p = licPrices;
+  const mul = m => ({ n16: m.n16 * hosts, n2: m.n2 * hosts, cost: m.cost * hosts });
+  const stdBest = mul(licBestMix(stdCores, p.wsStd16, p.wsStd2));
+  const std2    = mul(licTwoCoreOnly(stdCores, p.wsStd2));
+  const dcBest  = mul(licBestMix(dcCores, p.wsDc16, p.wsDc2));
+  const dc2     = mul(licTwoCoreOnly(dcCores, p.wsDc2));
+  const cheaper = stdBest.cost <= dcBest.cost ? 'standard' : 'datacenter';
+  const chosen  = (r.edition === 'standard' || r.edition === 'datacenter') ? r.edition : cheaper;
+  // Smallest VMs-per-host count at which Datacenter matches/beats stacked Standard
+  let breakEven = null;
+  const dcHostCost = licBestMix(dcCores, p.wsDc16, p.wsDc2).cost;
+  for (let v = 2; v <= 200; v += 2) {
+    if (licBestMix(Math.ceil(v / 2) * coresPerHost, p.wsStd16, p.wsStd2).cost >= dcHostCost) { breakEven = v; break; }
+  }
+  return { hosts, coresPerHost, vms, vmsPerHost, stdSets, stdCores, dcCores,
+           stdBest, std2, dcBest, dc2, cheaper, chosen, breakEven,
+           chosenMix:  chosen === 'standard' ? stdBest : dcBest,
+           chosenCost: chosen === 'standard' ? stdBest.cost : dcBest.cost };
+}
+
+function licSqlCompute(r) {
+  const count      = Math.max(1, r.count || 1);
+  const licCores   = Math.max(4, Math.max(1, r.vcores || 1));
+  const packsPerVM = Math.ceil(licCores / 2);
+  const price      = r.edition === 'enterprise' ? licPrices.sqlEnt2 : licPrices.sqlStd2;
+  const costPerVM  = packsPerVM * price;
+  return { count, licCores, packsPerVM, packs: packsPerVM * count, costPerVM, cost: costPerVM * count,
+           overCap:  r.edition !== 'enterprise' && (r.vcores || 0) > 24,
+           expressOk:(r.vcores || 0) <= 4 };
+}
+
+// Single source of truth — used by the live panels, TXT/PDF export, and XLSX export.
+function computeLicensing() {
+  const win = licWinRows.map(r => ({ row: r, calc: licWinCompute(r) }));
+  const sql = licSqlRows.map(r => ({ row: r, calc: licSqlCompute(r) }));
+  const shop = { wsStd16: 0, wsStd2: 0, wsDc16: 0, wsDc2: 0, sqlStd2: 0, sqlEnt2: 0 };
+  let winCost = 0, sqlCost = 0;
+  win.forEach(w => {
+    winCost += w.calc.chosenCost;
+    if (w.calc.chosen === 'standard') { shop.wsStd16 += w.calc.chosenMix.n16; shop.wsStd2 += w.calc.chosenMix.n2; }
+    else                              { shop.wsDc16  += w.calc.chosenMix.n16; shop.wsDc2  += w.calc.chosenMix.n2; }
+  });
+  sql.forEach(s => {
+    sqlCost += s.calc.cost;
+    if (s.row.edition === 'enterprise') shop.sqlEnt2 += s.calc.packs; else shop.sqlStd2 += s.calc.packs;
+  });
+  return { win, sql, shop, winCost, sqlCost, total: winCost + sqlCost };
+}
+
+// ── Licensing: row management ──
+function licAddWinRow() {
+  licWinId++;
+  licWinRows.push({ id: licWinId, name: 'Host group ' + licWinId, hosts: 2, sockets: 2, cores: 12, vms: 4, mobility: true, edition: 'auto' });
+  licRenderAll();
+}
+function licUpdateWin(id, field, val) {
+  const r = licWinRows.find(x => x.id === id); if (!r) return;
+  if (['hosts', 'sockets', 'cores'].includes(field)) r[field] = Math.max(1, parseInt(val) || 1);
+  else if (field === 'vms')      r[field] = Math.max(0, parseInt(val) || 0);
+  else if (field === 'mobility') r[field] = !!val;
+  else r[field] = val;
+  licRenderAll();
+}
+function licRemoveWin(id) { licWinRows = licWinRows.filter(x => x.id !== id); licRenderAll(); }
+
+function licAddSqlRow() {
+  licSqlId++;
+  licSqlRows.push({ id: licSqlId, name: 'SQL VM ' + licSqlId, count: 1, vcores: 4, edition: 'standard', cur: '' });
+  licRenderAll();
+}
+function licUpdateSql(id, field, val) {
+  const r = licSqlRows.find(x => x.id === id); if (!r) return;
+  if (field === 'count' || field === 'vcores') r[field] = Math.max(1, parseInt(val) || 1);
+  else r[field] = val;
+  licRenderAll();
+}
+function licRemoveSql(id) { licSqlRows = licSqlRows.filter(x => x.id !== id); licRenderAll(); }
+
+// ── Licensing: pricing ──
+function licPriceUpdate(key, val) {
+  licPrices[key] = key === 'cur' ? String(val) : Math.max(0, parseFloat(val) || 0);
+  licRenderAll();
+}
+function licSyncPriceInputs() {
+  Object.keys(LIC_DEFAULT_PRICES).forEach(k => {
+    const el = document.getElementById('lic-p-' + k);
+    if (el) el.value = licPrices[k];
+  });
+}
+function licResetPrices() { licPrices = { ...LIC_DEFAULT_PRICES }; licSyncPriceInputs(); licRenderAll(); }
+
+// ── Licensing: pull from Environment ──
+function licPullFromEnvironment() {
+  const infra = getInfrastructureModel();
+  let winSrvVMs = 0;
+  groups.forEach(g => {
+    const o = OS_OPTS.find(x => x.v === g.os) || {};
+    if (o.win && g.os !== 'windows-10-11') winSrvVMs += Math.max(1, g.count || 1);
+  });
+  const src = infra.groups.filter(g => g.role !== 'backup');
+  const list = src.length ? src : infra.groups;
+  licWinRows = list.map((g, i) => ({
+    id: i + 1, name: g.name || g.model || ('Host group ' + (i + 1)),
+    hosts: Math.max(1, g.count || 1), sockets: g.sockets || 2, cores: g.cores || 16,
+    vms: i === 0 ? winSrvVMs : 0, mobility: g.mode === 'cluster', edition: 'auto',
+  }));
+  licWinId = licWinRows.length;
+  licRenderAll();
+}
+function licPullSqlFromEnvironment() {
+  const src = groups.filter(g => g.sql || (OS_OPTS.find(x => x.v === g.os) || {}).sql);
+  if (!src.length) { alert('No VM groups with SQL found on the Environment tab.'); return; }
+  licSqlRows = src.map((g, i) => {
+    const ed = g.sqlEdition || 'standard';
+    return { id: i + 1, name: g.name, count: Math.max(1, g.count || 1), vcores: Math.max(1, g.vcpu || 1),
+             edition: ed === 'enterprise' ? 'enterprise' : 'standard',
+             cur: ed === 'express' ? 'SQL Express' : ed === 'developer' ? 'SQL Developer' : '' };
+  });
+  licSqlId = licSqlRows.length;
+  licRenderAll();
+}
+
+// ── Licensing: rendering ──
+function licRenderWinRows() {
+  const el = document.getElementById('lic-win-rows'); if (!el) return;
+  if (!licWinRows.length) {
+    el.innerHTML = '<div class="empty-infra">No host groups yet — add one or pull from the Environment tab.</div>';
+    return;
+  }
+  el.innerHTML = licWinRows.map(r => {
+    const c = licWinCompute(r);
+    const pill = ed => c.cheaper === ed ? ' <span class="lic-pill good">cheapest</span>' : '';
+    return `
+    <div class="host-group">
+      <div class="host-group-head">
+        <div style="display:flex;align-items:center;gap:8px;min-width:0;"><span class="host-group-tag">Hosts</span><span class="host-group-name">${esc(r.name)}</span></div>
+        <button class="btn btn-danger btn-sm" type="button" onclick="licRemoveWin(${r.id})">Remove</button>
+      </div>
+      <div class="host-group-grid">
+        <div class="fg wide"><label class="fl">Host Group Name</label><input class="fi" value="${esc(r.name)}" onchange="licUpdateWin(${r.id},'name',this.value)"></div>
+        <div class="fg"><label class="fl">Hosts</label><input type="number" class="fi" min="1" value="${r.hosts}" onchange="licUpdateWin(${r.id},'hosts',this.value)"></div>
+        <div class="fg"><label class="fl">CPU Sockets / Host</label><input type="number" class="fi" min="1" value="${r.sockets}" onchange="licUpdateWin(${r.id},'sockets',this.value)"></div>
+        <div class="fg"><label class="fl">Cores / Socket</label><input type="number" class="fi" min="1" value="${r.cores}" onchange="licUpdateWin(${r.id},'cores',this.value)"></div>
+        <div class="fg"><label class="fl">Windows Server VMs</label><input type="number" class="fi" min="0" value="${r.vms}" onchange="licUpdateWin(${r.id},'vms',this.value)"></div>
+        <div class="fg"><label class="fl">License As</label><select class="fs" onchange="licUpdateWin(${r.id},'edition',this.value)">
+          <option value="auto"${r.edition === 'auto' ? ' selected' : ''}>Auto (cheapest)</option>
+          <option value="standard"${r.edition === 'standard' ? ' selected' : ''}>Standard</option>
+          <option value="datacenter"${r.edition === 'datacenter' ? ' selected' : ''}>Datacenter</option>
+        </select></div>
+        <label class="ha-option"><input type="checkbox" ${r.mobility ? 'checked' : ''} onchange="licUpdateWin(${r.id},'mobility',this.checked)"> VMs move between hosts (cluster / live migration)</label>
+      </div>
+      <div class="lic-result">
+        <div class="lic-result-head">
+          <span class="lic-result-name">Requirement — ${c.coresPerHost} core licenses / host${c.hosts > 1 ? ' × ' + c.hosts + ' hosts' : ''} · ${c.vmsPerHost} VM${c.vmsPerHost === 1 ? '' : 's'}/host</span>
+          <span class="lic-pill ${c.chosen === 'datacenter' ? 'warn' : 'good'}">${c.chosen === 'standard' ? 'Standard' : 'Datacenter'} selected — ${licMoney(c.chosenCost)}</span>
+        </div>
+        <div class="lic-opt"><span class="lic-opt-lbl">Standard — best mix${pill('standard')}</span><span class="lic-opt-packs">${c.stdCores * c.hosts} cores → ${licMixLbl(c.stdBest)}</span><span class="lic-opt-cost">${licMoney(c.stdBest.cost)}</span></div>
+        <div class="lic-opt"><span class="lic-opt-lbl">Standard — 2-core only</span><span class="lic-opt-packs">${licMixLbl(c.std2)}</span><span class="lic-opt-cost">${licMoney(c.std2.cost)}</span></div>
+        <div class="lic-opt"><span class="lic-opt-lbl">Datacenter — best mix${pill('datacenter')}</span><span class="lic-opt-packs">${c.dcCores * c.hosts} cores → ${licMixLbl(c.dcBest)}</span><span class="lic-opt-cost">${licMoney(c.dcBest.cost)}</span></div>
+        <div class="lic-opt"><span class="lic-opt-lbl">Datacenter — 2-core only</span><span class="lic-opt-packs">${licMixLbl(c.dc2)}</span><span class="lic-opt-cost">${licMoney(c.dc2.cost)}</span></div>
+        <div class="lic-note">Standard needs ${c.stdSets} full core-set${c.stdSets === 1 ? '' : 's'} per host (2 VMs per set).${c.breakEven ? ' Datacenter becomes the better buy at ~' + c.breakEven + ' VMs per host.' : ''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function licRenderSqlRows() {
+  const el = document.getElementById('lic-sql-rows'); if (!el) return;
+  if (!licSqlRows.length) {
+    el.innerHTML = '<div class="empty-infra">No SQL VMs yet — add one or pull SQL-flagged VM groups from the Environment tab.</div>';
+    return;
+  }
+  el.innerHTML = licSqlRows.map(r => {
+    const c = licSqlCompute(r);
+    return `
+    <div class="host-group">
+      <div class="host-group-head">
+        <div style="display:flex;align-items:center;gap:8px;min-width:0;"><span class="host-group-tag">SQL</span><span class="host-group-name">${esc(r.name)}</span></div>
+        <button class="btn btn-danger btn-sm" type="button" onclick="licRemoveSql(${r.id})">Remove</button>
+      </div>
+      <div class="host-group-grid">
+        <div class="fg wide"><label class="fl">VM / Group Name</label><input class="fi" value="${esc(r.name)}" onchange="licUpdateSql(${r.id},'name',this.value)"></div>
+        <div class="fg"><label class="fl">VM Count</label><input type="number" class="fi" min="1" value="${r.count}" onchange="licUpdateSql(${r.id},'count',this.value)"></div>
+        <div class="fg"><label class="fl">vCores / VM</label><input type="number" class="fi" min="1" value="${r.vcores}" onchange="licUpdateSql(${r.id},'vcores',this.value)"></div>
+        <div class="fg"><label class="fl">Target Edition</label><select class="fs" onchange="licUpdateSql(${r.id},'edition',this.value)">
+          <option value="standard"${r.edition === 'standard' ? ' selected' : ''}>SQL 2022 Standard</option>
+          <option value="enterprise"${r.edition === 'enterprise' ? ' selected' : ''}>SQL 2022 Enterprise</option>
+        </select></div>
+        <div class="fg wide"><label class="fl">Current Version (for the report)</label><input class="fi" value="${esc(r.cur || '')}" placeholder="e.g. SQL 2014 Express" onchange="licUpdateSql(${r.id},'cur',this.value)"></div>
+      </div>
+      <div class="lic-result">
+        <div class="lic-result-head">
+          <span class="lic-result-name">${c.licCores} core licenses / VM → ${c.packsPerVM}× 2-core pack${c.packsPerVM === 1 ? '' : 's'} / VM</span>
+          <span class="lic-pill ${c.overCap ? 'bad' : 'good'}">${licMoney(c.cost)}${r.count > 1 ? ' (' + licMoney(c.costPerVM) + ' / VM)' : ''}</span>
+        </div>
+        ${c.overCap ? '<div class="lic-note" style="color:#EF4444;">⚠ ' + r.vcores + ' vCores exceeds the SQL Standard cap of 24 cores per instance — Enterprise is required (or reduce vCores).</div>' : ''}
+        ${c.expressOk && r.edition === 'standard' ? '<div class="lic-note">💡 At ≤4 vCores this VM could stay on free SQL Express if every database is under 10 GB and ~1.4 GB buffer pool is enough.</div>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function licRenderSummaries() {
+  const L = computeLicensing();
+  const winEl = document.getElementById('lic-win-summary');
+  if (winEl) {
+    winEl.innerHTML = licWinRows.length
+      ? `<div class="lic-sum-total"><span>Windows Server total (selected editions)</span><span class="val">${licMoney(L.winCost)}</span></div>`
+      : '<span style="font-size:12px;color:var(--text-muted);">Add a host group to calculate Windows Server licensing.</span>';
+  }
+  const sqlEl = document.getElementById('lic-sql-summary');
+  if (sqlEl) {
+    sqlEl.innerHTML = licSqlRows.length
+      ? `<div class="lic-sum-total"><span>SQL Server total</span><span class="val">${licMoney(L.sqlCost)}</span></div>`
+      : '<span style="font-size:12px;color:var(--text-muted);">Add a SQL VM group to calculate SQL Server licensing.</span>';
+  }
+  const totEl = document.getElementById('lic-total-summary');
+  if (totEl) {
+    const s = L.shop;
+    const items = [
+      ['Windows Server 2025 Standard — 16-core license',  s.wsStd16, licPrices.wsStd16],
+      ['Windows Server 2025 Standard — 2-core pack',      s.wsStd2,  licPrices.wsStd2],
+      ['Windows Server 2025 Datacenter — 16-core license',s.wsDc16,  licPrices.wsDc16],
+      ['Windows Server 2025 Datacenter — 2-core pack',    s.wsDc2,   licPrices.wsDc2],
+      ['SQL Server 2022 Standard — 2-core pack',          s.sqlStd2, licPrices.sqlStd2],
+      ['SQL Server 2022 Enterprise — 2-core pack',        s.sqlEnt2, licPrices.sqlEnt2],
+    ].filter(i => i[1] > 0);
+    totEl.innerHTML = (items.length
+      ? items.map(i => `<div class="lic-sum-row"><span>${i[0]} × <strong>${i[1]}</strong></span><span class="val">${licMoney(i[1] * i[2])}</span></div>`).join('')
+      : '<div style="font-size:12px;color:var(--text-muted);padding-bottom:6px;">Nothing to buy yet — add host groups or SQL VMs.</div>')
+      + `<div class="lic-sum-row"><span>Windows Server subtotal</span><span class="val">${licMoney(L.winCost)}</span></div>`
+      + `<div class="lic-sum-row"><span>SQL Server subtotal</span><span class="val">${licMoney(L.sqlCost)}</span></div>`
+      + `<div class="lic-sum-total"><span>Estimated total</span><span class="val">${licMoney(L.total)}</span></div>`
+      + '<div class="lic-note">Windows rows set to "Auto" use whichever edition is cheaper for that group. Estimates only — confirm with your licensing provider.</div>';
+  }
+}
+
+function licRenderAll() { licRenderWinRows(); licRenderSqlRows(); licRenderSummaries(); }
+
+// Licensing lines for the TXT/PDF export — `row` is getExportText's label/value formatter.
+function licExportSection(row, D) {
+  const lic = computeLicensing();
+  const winLines = lic.win.length ? lic.win.flatMap(w => {
+    const c = w.calc;
+    return [
+      '  ' + w.row.name,
+      row('    Requirement:', c.hosts + ' host(s) × ' + c.coresPerHost + ' core licenses · ' + c.vmsPerHost + ' VM(s)/host'),
+      row('    Standard:', licMixLbl(c.stdBest) + ' = ' + licMoney(c.stdBest.cost) + '   [2-core only: ' + licMixLbl(c.std2) + ' = ' + licMoney(c.std2.cost) + ']'),
+      row('    Datacenter:', licMixLbl(c.dcBest) + ' = ' + licMoney(c.dcBest.cost) + '   [2-core only: ' + licMixLbl(c.dc2) + ' = ' + licMoney(c.dc2.cost) + ']'),
+      row('    Selected:', (c.chosen === 'standard' ? 'Standard' : 'Datacenter') + ' = ' + licMoney(c.chosenCost)),
+    ];
+  }) : ['  (no Windows host groups defined)'];
+  const sqlLines = lic.sql.length ? lic.sql.flatMap(s => {
+    const c = s.calc;
+    return [
+      '  ' + s.row.name + (s.row.cur ? '  (currently: ' + s.row.cur + ')' : ''),
+      row('    Licenses:', c.count + ' VM(s) × ' + c.packsPerVM + ' × 2-core packs (' + c.licCores + ' cores/VM, ' + (s.row.edition === 'enterprise' ? 'Enterprise' : 'Standard') + ') = ' + licMoney(c.cost)),
+      ...(c.overCap ? [row('    Warning:', 'Exceeds SQL Standard 24-core cap — Enterprise required')] : []),
+    ];
+  }) : ['  (no SQL VM groups defined)'];
+  return [
+    '  LICENSING',
+    D,
+    '  WINDOWS SERVER 2025',
+    ...winLines,
+    '',
+    '  SQL SERVER 2022',
+    ...sqlLines,
+    '',
+    row('  Windows Subtotal:', licMoney(lic.winCost)),
+    row('  SQL Subtotal:',     licMoney(lic.sqlCost)),
+    row('  Estimated Total:',  licMoney(lic.total)),
+  ];
 }
 
 // ── Cross-tab sync ────────────────────────────────────────────────────────────
@@ -3468,6 +3957,21 @@ function raidApplyImport(d) {
     proposedBuild = { ...proposedBuild, ...d.pbv };
   }
   renderProposedBuild();
+
+  // ── Licensing tab (v7+; absent in v6/older imports — defaults are kept) ──
+  if (d.lic && typeof d.lic === 'object') {
+    if (d.lic.prices && typeof d.lic.prices === 'object') licPrices = { ...licPrices, ...d.lic.prices };
+    if (Array.isArray(d.lic.win)) {
+      licWinRows = d.lic.win.map((r, i) => ({ ...r, id: Number.isFinite(Number(r.id)) ? Number(r.id) : i + 1 }));
+      licWinId = licWinRows.length ? Math.max(...licWinRows.map(r => r.id)) : 0;
+    }
+    if (Array.isArray(d.lic.sql)) {
+      licSqlRows = d.lic.sql.map((r, i) => ({ ...r, id: Number.isFinite(Number(r.id)) ? Number(r.id) : i + 1 }));
+      licSqlId = licSqlRows.length ? Math.max(...licSqlRows.map(r => r.id)) : 0;
+    }
+    licSyncPriceInputs();
+  }
+  licRenderAll();
 
   // ── Forward RAID calculator ───────────────────────────────────────────────
   if (d.raidDisks != null) document.getElementById('r-disks').value = d.raidDisks;
@@ -4022,6 +4526,32 @@ function exportXlsx() {
     ];
 
     addSheet(rows, 'Migration');
+  }
+
+  // ── Sheet: Licensing ───────────────────────────────────────────────────
+  {
+    const lic = computeLicensing();
+    const rows = [
+      ['MSP Toolbox — Licensing', '', ts],
+      blank(),
+      ['WINDOWS SERVER 2025  (per-core, per host)'],
+      ['Group', 'Hosts', 'Cores to License / Host', 'Windows VMs', 'VMs / Host', 'Standard Best Mix', 'Standard Cost', 'Datacenter Best Mix', 'Datacenter Cost', 'Selected', 'Selected Cost'],
+      ...(lic.win.length
+        ? lic.win.map(w => { const c = w.calc; return [w.row.name, c.hosts, c.coresPerHost, c.vms, c.vmsPerHost, licMixLbl(c.stdBest), Math.round(c.stdBest.cost), licMixLbl(c.dcBest), Math.round(c.dcBest.cost), c.chosen, Math.round(c.chosenCost)]; })
+        : [['(none defined)']]),
+      blank(),
+      ['SQL SERVER 2022  (per-VM, 2-core packs)'],
+      ['Group', 'Current Version', 'VMs', 'vCores / VM', 'Cores Licensed / VM', '2-core Packs / VM', 'Edition', 'Cost / VM', 'Total Cost', 'Note'],
+      ...(lic.sql.length
+        ? lic.sql.map(s => { const c = s.calc; return [s.row.name, s.row.cur || '', c.count, s.row.vcores, c.licCores, c.packsPerVM, s.row.edition, Math.round(c.costPerVM), Math.round(c.cost), c.overCap ? 'Exceeds SQL Standard 24-core cap — Enterprise required' : '']; })
+        : [['(none defined)']]),
+      blank(),
+      ['TOTALS  (' + (licPrices.cur || '') + ')'],
+      kv('Windows Server Subtotal', Math.round(lic.winCost)),
+      kv('SQL Server Subtotal',     Math.round(lic.sqlCost)),
+      kv('Estimated Total',         Math.round(lic.total)),
+    ];
+    addSheet(rows, 'Licensing');
   }
 
   // ── Sheet: Network ─────────────────────────────────────────────────────
