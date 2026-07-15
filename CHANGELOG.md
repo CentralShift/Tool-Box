@@ -11,6 +11,14 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
+## 2026-07-15 — Claude — Licensing tab: add Windows Server + RDS CAL calculator
+
+- New "Client Access Licenses (CALs)" card on the Licensing tab: Windows Server CALs (every user/device accessing a server) and RDS CALs (Remote Desktop users/devices, on top of a Windows CAL) — user-vs-device comparison with auto-cheapest selection, aimed at shared-terminal sites (POS / gaming floor / kiosks, e.g. RSLs) where Device CALs usually win
+- Four new editable prices (WS User/Device CAL, RDS User/Device CAL), CAL lines + subtotal in the Cost Summary shopping list, new CALs rules ref-box (mixing allowed, version-specific, not needed for anonymous web)
+- Export schema v7→v8 (`lic.cals` block; v7/v6/v5 imports keep defaults — verified in-browser); CAL section added to TXT/PDF export and the XLSX Licensing sheet; brace balance 1522/1522, node --check passes, 7 Node logic tests + browser round-trip/XLSX tests pass
+
+---
+
 ## 2026-07-15 — Claude — Add Licensing tab: Windows Server 2025 + SQL Server 2022 calculators
 
 - New tab between Migration and Network: Windows Server 2025 per-core calculator (min 8 cores/proc, 16/host; Standard stacks full core-sets at 2 VMs/set vs Datacenter unlimited; per-host pack maths since licenses can't span hosts; VM-mobility toggle; auto/forced edition per row with break-even note) and SQL Server 2022 per-VM calculator (min 4 cores/VM, 2-core packs only, Standard 24-core cap warning, Express-eligibility hint); every requirement shown as cheapest 16-core + 2-core mix AND 2-core-packs-only equivalent

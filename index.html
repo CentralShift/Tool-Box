@@ -1476,6 +1476,42 @@ body{background:var(--bg-base);}
       <div style="border-top:1px solid var(--border-subtle);padding:18px 24px;" id="lic-sql-summary"></div>
     </div>
 
+    <!-- Client Access Licenses (CALs) -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-wrap">
+          <div class="card-icon ci-teal">👥</div>
+          <div>
+            <div class="card-title">Client Access Licenses (CALs)</div>
+            <div class="card-desc">Windows Server CALs + RDS CALs — user vs device, common for POS / gaming-floor terminals</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;">Windows Server CALs — everyone / everything that accesses a Windows Server</div>
+        <div class="host-group-grid" style="margin-bottom:16px;">
+          <div class="fg"><label class="fl">Users (staff)</label><input type="number" class="fi" id="lic-cal-users" min="0" value="20" oninput="licUpdateCal('users',this.value)"></div>
+          <div class="fg"><label class="fl">Devices (POS / terminals / kiosks)</label><input type="number" class="fi" id="lic-cal-devices" min="0" value="12" oninput="licUpdateCal('devices',this.value)"></div>
+          <div class="fg"><label class="fl">License By</label><select class="fs" id="lic-cal-mode" onchange="licUpdateCal('mode',this.value)">
+            <option value="auto" selected>Auto (cheapest)</option>
+            <option value="user">User CALs</option>
+            <option value="device">Device CALs</option>
+          </select></div>
+        </div>
+        <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;">RDS CALs — only users / devices using Remote Desktop sessions (in addition to a Windows CAL)</div>
+        <div class="host-group-grid">
+          <div class="fg"><label class="fl">RDS Users</label><input type="number" class="fi" id="lic-cal-rdsUsers" min="0" value="0" oninput="licUpdateCal('rdsUsers',this.value)"></div>
+          <div class="fg"><label class="fl">RDS Devices</label><input type="number" class="fi" id="lic-cal-rdsDevices" min="0" value="0" oninput="licUpdateCal('rdsDevices',this.value)"></div>
+          <div class="fg"><label class="fl">License By</label><select class="fs" id="lic-cal-rdsMode" onchange="licUpdateCal('rdsMode',this.value)">
+            <option value="auto" selected>Auto (cheapest)</option>
+            <option value="user">RDS User CALs</option>
+            <option value="device">RDS Device CALs</option>
+          </select></div>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border-subtle);padding:18px 24px;" id="lic-cal-summary"></div>
+    </div>
+
   </div><!-- /left-col -->
 
   <div class="right-col">
@@ -1515,6 +1551,10 @@ body{background:var(--bg-base);}
           <div class="fg"><label class="fl">WS Datacenter — 2-core pack</label><input type="number" class="fi" id="lic-p-wsDc2" min="0" step="1" oninput="licPriceUpdate('wsDc2',this.value)"></div>
           <div class="fg"><label class="fl">SQL Standard — 2-core pack</label><input type="number" class="fi" id="lic-p-sqlStd2" min="0" step="1" oninput="licPriceUpdate('sqlStd2',this.value)"></div>
           <div class="fg"><label class="fl">SQL Enterprise — 2-core pack</label><input type="number" class="fi" id="lic-p-sqlEnt2" min="0" step="1" oninput="licPriceUpdate('sqlEnt2',this.value)"></div>
+          <div class="fg"><label class="fl">Windows Server — User CAL</label><input type="number" class="fi" id="lic-p-wsUserCal" min="0" step="1" oninput="licPriceUpdate('wsUserCal',this.value)"></div>
+          <div class="fg"><label class="fl">Windows Server — Device CAL</label><input type="number" class="fi" id="lic-p-wsDevCal" min="0" step="1" oninput="licPriceUpdate('wsDevCal',this.value)"></div>
+          <div class="fg"><label class="fl">RDS — User CAL</label><input type="number" class="fi" id="lic-p-rdsUserCal" min="0" step="1" oninput="licPriceUpdate('rdsUserCal',this.value)"></div>
+          <div class="fg"><label class="fl">RDS — Device CAL</label><input type="number" class="fi" id="lic-p-rdsDevCal" min="0" step="1" oninput="licPriceUpdate('rdsDevCal',this.value)"></div>
         </div>
         <div style="font-size:11px;color:var(--text-muted);line-height:1.6;padding:8px 10px;margin-top:12px;background:rgba(255,255,255,0.025);border-radius:var(--radius-sm);">
           ℹ️ Replace with your reseller / CSP pricing (e.g. AUD ex-GST). All calculations update live.
@@ -1542,6 +1582,10 @@ body{background:var(--bg-base);}
           <div class="ref-box">
             <div class="ref-box-title" style="color:#34D399;">SQL Server 2022 — per VM</div>
             License all vCores in each SQL VM, minimum <strong style="color:var(--text-primary);">4 core licenses per VM</strong>, sold in 2-core packs only. <strong style="color:var(--text-primary);">Standard</strong> caps at 24 cores / 128 GB RAM per instance. <strong style="color:var(--text-primary);">Enterprise</strong> removes limits; licensing all physical host cores with Enterprise + SA allows unlimited SQL VMs on that host. Software Assurance is required for license mobility between hosts.
+          </div>
+          <div class="ref-box">
+            <div class="ref-box-title" style="color:#A78BFA;">CALs — Windows Server &amp; RDS</div>
+            Every user <em>or</em> device that accesses a Windows Server needs a <strong style="color:var(--text-primary);">Windows Server CAL</strong> (on top of the core licenses; not needed for anonymous public web access). Anyone using Remote Desktop sessions needs an <strong style="color:var(--text-primary);">RDS CAL as well</strong>. Pick User CALs when each person uses several devices; pick Device CALs for shared terminals (POS, gaming floor, kiosks) used by many rotating staff. User and Device CALs can be mixed. CALs are version-specific — upgrading hosts to 2025 means 2025 CALs.
           </div>
           <div class="ref-box">
             <div class="ref-box-title" style="color:#FBBF24;">SQL Express — free, but limited</div>
@@ -1669,10 +1713,12 @@ let proposedBuild = {
   sanEnabled: true, sanUsableTB: 10,
 };
 // Licensing tab state (calculator functions live in the Licensing section below)
-const LIC_DEFAULT_PRICES = { cur:'USD', wsStd16:1176, wsStd2:148, wsDc16:6771, wsDc2:847, sqlStd2:3945, sqlEnt2:15123 };
+const LIC_DEFAULT_PRICES = { cur:'USD', wsStd16:1176, wsStd2:148, wsDc16:6771, wsDc2:847, sqlStd2:3945, sqlEnt2:15123,
+                             wsUserCal:50, wsDevCal:40, rdsUserCal:140, rdsDevCal:115 };
 let licPrices  = { ...LIC_DEFAULT_PRICES };
 let licWinRows = [], licWinId = 0;
 let licSqlRows = [], licSqlId = 0;
+let licCals = { users: 20, devices: 12, mode: 'auto', rdsUsers: 0, rdsDevices: 0, rdsMode: 'auto' };
 
 function primaryTopologyChanged() {
   const clustered = document.getElementById('hw-deployment').value === 'cluster';
@@ -2598,6 +2644,7 @@ function infoIcon(tip) {
   licSqlId++;
   licSqlRows.push({id:licSqlId, name:'Database Servers', count:1, vcores:8, edition:'standard', cur:'SQL 2016 Standard'});
   licSyncPriceInputs();
+  licSyncCalInputs();
   licRenderAll();
   ['hw-name','hw-sockets','hw-cores','hw-ghz','hw-ram','hw-storage','hw-hypervisor','hw-ht'].forEach(function(id){
     var field=document.getElementById(id);
@@ -3385,9 +3432,9 @@ function getExportText() {
     L,
   ].filter(l => l !== null).join('\n');
 
-  // Machine-readable block — v7 adds the Licensing tab; v6 (Proposed Build Validator) and v5 fields unchanged for back-compat
+  // Machine-readable block — v8 adds CALs to the Licensing block; v7 (Licensing), v6 (Proposed Build Validator) and v5 fields unchanged for back-compat
   const data = {
-    v: 7,
+    v: 8,
     vmHw: {
       name:       document.getElementById('hw-name').value,
       sockets:    hwSockN,
@@ -3438,6 +3485,7 @@ function getExportText() {
       prices: { ...licPrices },
       win: licWinRows.map(r => ({ ...r })),
       sql: licSqlRows.map(r => ({ ...r })),
+      cals: { ...licCals },
     },
   };
 
@@ -3553,11 +3601,40 @@ function licSqlCompute(r) {
            expressOk:(r.vcores || 0) <= 4 };
 }
 
+// One CAL decision (Windows or RDS): compare licensing the user count vs the device count.
+// A zero count means "not counted that way" and is excluded from the auto comparison.
+function licCalPair(userCount, devCount, pUser, pDev, mode) {
+  const opts = [];
+  if (userCount > 0) opts.push({ kind: 'user',   n: userCount, cost: userCount * pUser });
+  if (devCount  > 0) opts.push({ kind: 'device', n: devCount,  cost: devCount  * pDev  });
+  if (!opts.length) return { options: [], chosen: null, cheapest: null };
+  const cheapest = opts.reduce((a, b) => a.cost <= b.cost ? a : b).kind;
+  let chosen;
+  if (mode === 'user' || mode === 'device') {
+    chosen = opts.find(o => o.kind === mode) ||
+             { kind: mode, n: mode === 'user' ? userCount : devCount, cost: mode === 'user' ? userCount * pUser : devCount * pDev };
+  } else {
+    chosen = opts.reduce((a, b) => a.cost <= b.cost ? a : b);
+  }
+  return { options: opts, chosen, cheapest };
+}
+
+function licCalCompute() {
+  const c = licCals, p = licPrices;
+  const win = licCalPair(c.users, c.devices, p.wsUserCal, p.wsDevCal, c.mode);
+  const rds = licCalPair(c.rdsUsers, c.rdsDevices, p.rdsUserCal, p.rdsDevCal, c.rdsMode);
+  const winCost = win.chosen ? win.chosen.cost : 0;
+  const rdsCost = rds.chosen ? rds.chosen.cost : 0;
+  return { win, rds, winCost, rdsCost, cost: winCost + rdsCost };
+}
+
 // Single source of truth — used by the live panels, TXT/PDF export, and XLSX export.
 function computeLicensing() {
   const win = licWinRows.map(r => ({ row: r, calc: licWinCompute(r) }));
   const sql = licSqlRows.map(r => ({ row: r, calc: licSqlCompute(r) }));
-  const shop = { wsStd16: 0, wsStd2: 0, wsDc16: 0, wsDc2: 0, sqlStd2: 0, sqlEnt2: 0 };
+  const cal = licCalCompute();
+  const shop = { wsStd16: 0, wsStd2: 0, wsDc16: 0, wsDc2: 0, sqlStd2: 0, sqlEnt2: 0,
+                 wsUserCal: 0, wsDevCal: 0, rdsUserCal: 0, rdsDevCal: 0 };
   let winCost = 0, sqlCost = 0;
   win.forEach(w => {
     winCost += w.calc.chosenCost;
@@ -3568,7 +3645,9 @@ function computeLicensing() {
     sqlCost += s.calc.cost;
     if (s.row.edition === 'enterprise') shop.sqlEnt2 += s.calc.packs; else shop.sqlStd2 += s.calc.packs;
   });
-  return { win, sql, shop, winCost, sqlCost, total: winCost + sqlCost };
+  if (cal.win.chosen) { if (cal.win.chosen.kind === 'user') shop.wsUserCal  = cal.win.chosen.n; else shop.wsDevCal  = cal.win.chosen.n; }
+  if (cal.rds.chosen) { if (cal.rds.chosen.kind === 'user') shop.rdsUserCal = cal.rds.chosen.n; else shop.rdsDevCal = cal.rds.chosen.n; }
+  return { win, sql, cal, shop, winCost, sqlCost, calCost: cal.cost, total: winCost + sqlCost + cal.cost };
 }
 
 // ── Licensing: row management ──
@@ -3599,6 +3678,18 @@ function licUpdateSql(id, field, val) {
   licRenderAll();
 }
 function licRemoveSql(id) { licSqlRows = licSqlRows.filter(x => x.id !== id); licRenderAll(); }
+
+function licUpdateCal(field, val) {
+  if (field === 'mode' || field === 'rdsMode') licCals[field] = val;
+  else licCals[field] = Math.max(0, parseInt(val) || 0);
+  licRenderAll();
+}
+function licSyncCalInputs() {
+  Object.keys(licCals).forEach(k => {
+    const el = document.getElementById('lic-cal-' + k);
+    if (el) el.value = licCals[k];
+  });
+}
 
 // ── Licensing: pricing ──
 function licPriceUpdate(key, val) {
@@ -3724,6 +3815,28 @@ function licRenderSqlRows() {
   }).join('');
 }
 
+function licRenderCals() {
+  const el = document.getElementById('lic-cal-summary'); if (!el) return;
+  const cal = licCalCompute();
+  const kindLbl = (kind, rds) => (kind === 'user' ? (rds ? 'RDS User CALs' : 'User CALs') : (rds ? 'RDS Device CALs' : 'Device CALs'));
+  const block = (pair, title, rds) => {
+    if (!pair.chosen) return `<div class="lic-opt"><span class="lic-opt-lbl">${title}</span><span class="lic-opt-packs">— none required (counts are 0)</span><span class="lic-opt-cost"></span></div>`;
+    const rows = pair.options.map(o =>
+      `<div class="lic-opt"><span class="lic-opt-lbl">${kindLbl(o.kind, rds)}${o.kind === pair.cheapest && pair.options.length > 1 ? ' <span class="lic-pill good">cheapest</span>' : ''}</span>` +
+      `<span class="lic-opt-packs">${o.n} × ${licMoney(rds ? (o.kind === 'user' ? licPrices.rdsUserCal : licPrices.rdsDevCal) : (o.kind === 'user' ? licPrices.wsUserCal : licPrices.wsDevCal))}</span>` +
+      `<span class="lic-opt-cost">${licMoney(o.cost)}</span></div>`).join('');
+    return `<div class="lic-result" style="margin-top:0;">
+      <div class="lic-result-head"><span class="lic-result-name">${title}</span>
+      <span class="lic-pill good">${kindLbl(pair.chosen.kind, rds)} selected — ${licMoney(pair.chosen.cost)}</span></div>${rows}</div>`;
+  };
+  el.innerHTML =
+    block(cal.win, 'Windows Server 2025 CALs', false) +
+    '<div style="height:10px;"></div>' +
+    block(cal.rds, 'RDS 2025 CALs', true) +
+    `<div class="lic-sum-total"><span>CAL total</span><span class="val">${licMoney(cal.cost)}</span></div>` +
+    '<div class="lic-note">Each RDS user/device also needs a Windows Server CAL — make sure they are included in the Windows CAL counts above. CALs are not needed for anonymous public web access.</div>';
+}
+
 function licRenderSummaries() {
   const L = computeLicensing();
   const winEl = document.getElementById('lic-win-summary');
@@ -3748,18 +3861,23 @@ function licRenderSummaries() {
       ['Windows Server 2025 Datacenter — 2-core pack',    s.wsDc2,   licPrices.wsDc2],
       ['SQL Server 2022 Standard — 2-core pack',          s.sqlStd2, licPrices.sqlStd2],
       ['SQL Server 2022 Enterprise — 2-core pack',        s.sqlEnt2, licPrices.sqlEnt2],
+      ['Windows Server 2025 — User CAL',                  s.wsUserCal,  licPrices.wsUserCal],
+      ['Windows Server 2025 — Device CAL',                s.wsDevCal,   licPrices.wsDevCal],
+      ['RDS 2025 — User CAL',                             s.rdsUserCal, licPrices.rdsUserCal],
+      ['RDS 2025 — Device CAL',                           s.rdsDevCal,  licPrices.rdsDevCal],
     ].filter(i => i[1] > 0);
     totEl.innerHTML = (items.length
       ? items.map(i => `<div class="lic-sum-row"><span>${i[0]} × <strong>${i[1]}</strong></span><span class="val">${licMoney(i[1] * i[2])}</span></div>`).join('')
       : '<div style="font-size:12px;color:var(--text-muted);padding-bottom:6px;">Nothing to buy yet — add host groups or SQL VMs.</div>')
       + `<div class="lic-sum-row"><span>Windows Server subtotal</span><span class="val">${licMoney(L.winCost)}</span></div>`
       + `<div class="lic-sum-row"><span>SQL Server subtotal</span><span class="val">${licMoney(L.sqlCost)}</span></div>`
+      + `<div class="lic-sum-row"><span>CAL subtotal</span><span class="val">${licMoney(L.calCost)}</span></div>`
       + `<div class="lic-sum-total"><span>Estimated total</span><span class="val">${licMoney(L.total)}</span></div>`
-      + '<div class="lic-note">Windows rows set to "Auto" use whichever edition is cheaper for that group. Estimates only — confirm with your licensing provider.</div>';
+      + '<div class="lic-note">Windows rows and CALs set to "Auto" use whichever option is cheaper. Estimates only — confirm with your licensing provider.</div>';
   }
 }
 
-function licRenderAll() { licRenderWinRows(); licRenderSqlRows(); licRenderSummaries(); }
+function licRenderAll() { licRenderWinRows(); licRenderSqlRows(); licRenderCals(); licRenderSummaries(); }
 
 // Licensing lines for the TXT/PDF export — `row` is getExportText's label/value formatter.
 function licExportSection(row, D) {
@@ -3782,6 +3900,16 @@ function licExportSection(row, D) {
       ...(c.overCap ? [row('    Warning:', 'Exceeds SQL Standard 24-core cap — Enterprise required')] : []),
     ];
   }) : ['  (no SQL VM groups defined)'];
+  const calPairLine = (pair, rds) => {
+    if (!pair.chosen) return 'none required (counts are 0)';
+    const lbl = o => o.n + ' ' + (o.kind === 'user' ? 'User' : 'Device') + ' CAL(s) = ' + licMoney(o.cost);
+    const alt = pair.options.find(o => o.kind !== pair.chosen.kind);
+    return lbl(pair.chosen) + (alt ? '   [alternative: ' + lbl(alt) + ']' : '');
+  };
+  const calLines = [
+    row('    Windows CALs:', calPairLine(lic.cal.win, false)),
+    row('    RDS CALs:',     calPairLine(lic.cal.rds, true)),
+  ];
   return [
     '  LICENSING',
     D,
@@ -3791,8 +3919,12 @@ function licExportSection(row, D) {
     '  SQL SERVER 2022',
     ...sqlLines,
     '',
+    '  CLIENT ACCESS LICENSES',
+    ...calLines,
+    '',
     row('  Windows Subtotal:', licMoney(lic.winCost)),
     row('  SQL Subtotal:',     licMoney(lic.sqlCost)),
+    row('  CAL Subtotal:',     licMoney(lic.calCost)),
     row('  Estimated Total:',  licMoney(lic.total)),
   ];
 }
@@ -3969,7 +4101,9 @@ function raidApplyImport(d) {
       licSqlRows = d.lic.sql.map((r, i) => ({ ...r, id: Number.isFinite(Number(r.id)) ? Number(r.id) : i + 1 }));
       licSqlId = licSqlRows.length ? Math.max(...licSqlRows.map(r => r.id)) : 0;
     }
+    if (d.lic.cals && typeof d.lic.cals === 'object') licCals = { ...licCals, ...d.lic.cals };  // v8+
     licSyncPriceInputs();
+    licSyncCalInputs();
   }
   licRenderAll();
 
@@ -4546,9 +4680,20 @@ function exportXlsx() {
         ? lic.sql.map(s => { const c = s.calc; return [s.row.name, s.row.cur || '', c.count, s.row.vcores, c.licCores, c.packsPerVM, s.row.edition, Math.round(c.costPerVM), Math.round(c.cost), c.overCap ? 'Exceeds SQL Standard 24-core cap — Enterprise required' : '']; })
         : [['(none defined)']]),
       blank(),
+      ['CLIENT ACCESS LICENSES'],
+      ['Type', 'Licensed By', 'Count', 'Unit Price', 'Cost', 'Alternative'],
+      ...[['Windows Server 2025 CALs', lic.cal.win, licPrices.wsUserCal, licPrices.wsDevCal],
+          ['RDS 2025 CALs',            lic.cal.rds, licPrices.rdsUserCal, licPrices.rdsDevCal]].map(([lbl, pair, pU, pD]) => {
+        if (!pair.chosen) return [lbl, '(none required)', 0, '', 0, ''];
+        const alt = pair.options.find(o => o.kind !== pair.chosen.kind);
+        return [lbl, pair.chosen.kind, pair.chosen.n, pair.chosen.kind === 'user' ? pU : pD, Math.round(pair.chosen.cost),
+                alt ? alt.n + ' ' + alt.kind + ' CALs = ' + Math.round(alt.cost) : ''];
+      }),
+      blank(),
       ['TOTALS  (' + (licPrices.cur || '') + ')'],
       kv('Windows Server Subtotal', Math.round(lic.winCost)),
       kv('SQL Server Subtotal',     Math.round(lic.sqlCost)),
+      kv('CAL Subtotal',            Math.round(lic.calCost)),
       kv('Estimated Total',         Math.round(lic.total)),
     ];
     addSheet(rows, 'Licensing');
