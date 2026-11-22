@@ -11,6 +11,13 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
+## 2026-11-23 — Claude — Licensing tab clarity pass: proactive dual-pool guidance, Server+CAL caveat, reference card catch-up
+
+- Requested review pass over the Licensing tab for improvements/clarity. Three copy-only fixes (no logic changes): (1) the dual-pool warning between License Inventory and per-host "Already have licensing" was previously reactive-only (appeared after the fact in Inventory's summary) — added a proactive note on the Windows Server card itself so the guidance works whichever one a user opens first; (2) added a note clarifying "SQL Server — Server License" and the per-core Standard/Enterprise rows are ALTERNATIVE licensing models for the same SQL instance, not additive, since the holistic summary could otherwise read as "you need both"; (3) the Licensing Rules reference card documented every other feature in the tab except License Inventory itself — added a ref-box explaining it and its relationship to the per-host gap analysis
+- Flagged separately (not fixed without confirming scope): the SQL Server calculator's "Target Edition" dropdown is hardcoded to "SQL 2022 Standard/Enterprise" with no 2025 option, and the card/reference-card titles say "SQL Server 2022" — stale now that SQL Server 2025 is a real current product (confirmed by the user's own license records) and the Windows Server side already models 2025 as current
+
+---
+
 ## 2026-11-23 — Claude — License Inventory: track version per row, flag EOL/expired-SA, flag the dual-pool gap
 
 - Addressed: "a Windows Server 2016 entry would go against the calculations and no one would know" — License Inventory rows had no version field at all, so a logged Standard/Datacenter/CAL core could silently be an EOL version summed in at full face value with no visibility

@@ -1471,6 +1471,9 @@ body{background:var(--bg-base);}
         <button class="btn btn-secondary btn-sm" onclick="licPullFromEnvironment()" title="Import host groups and Windows VM counts from the Environment tab">↩ Pull from Environment</button>
       </div>
       <div class="card-body" style="padding-bottom:0;">
+        <div style="font-size:11px;color:var(--text-muted);line-height:1.6;padding:10px 12px;margin-bottom:14px;background:rgba(255,255,255,0.025);border-radius:var(--radius-sm);">
+          ℹ️ Each row's <strong style="color:var(--text-primary);">"Already have licensing"</strong> toggle is for when you know exactly which host owns which license. Don't know the breakdown yet? Log it in <strong style="color:var(--text-primary);">License Inventory</strong> above instead — its Holistic summary compares your total ownership against the total requirement across every row here.
+        </div>
         <div id="lic-win-rows"></div>
       </div>
       <div class="add-vm-foot">
@@ -1628,6 +1631,10 @@ body{background:var(--bg-base);}
           <div class="ref-box">
             <div class="ref-box-title" style="color:#F59E0B;">Licensing applies to the host, not the hypervisor</div>
             Per-core Windows Server licensing is based on the <strong style="color:var(--text-primary);">physical host's cores and how many Windows Server VMs it runs</strong> — it doesn't matter whether that host runs VMware, Hyper-V, Proxmox or anything else. A VMware host running only Linux VMs needs zero Windows Server core licenses; a Hyper-V host running Windows VMs needs them even though the Hyper-V role itself is free. Use each VM workload group's <strong style="color:var(--text-primary);">Runs On</strong> field (Environment tab) to assign it to the right host group, then <strong style="color:var(--text-primary);">Pull from Environment</strong> here — otherwise Windows VMs can get billed to the wrong host group.
+          </div>
+          <div class="ref-box">
+            <div class="ref-box-title" style="color:#FB923C;">License Inventory vs. per-host "Already have licensing"</div>
+            Two separate ways to record what you already own — pick one per license, don't use both. <strong style="color:var(--text-primary);">License Inventory</strong> (top of this tab) is a flat ledger with no host assignment, for when you don't know the breakdown; its Holistic summary compares owned totals against everything required across all rows below, flags EOL versions, and flags expired Software Assurance. The per-row <strong style="color:var(--text-primary);">"Already have licensing"</strong> toggle on each Windows Server row is for when you know exactly which host owns which cores, and offers a same-version-vs-2025-downgrade-rights top-up comparison that the Inventory doesn't. They are never combined — logging the same license in both would make the Holistic total look correct when it's actually double-counted.
           </div>
           <div style="font-size:11px;color:var(--text-muted);line-height:1.6;padding:8px 10px;background:rgba(255,255,255,0.025);border-radius:var(--radius-sm);">
             ⚠️ End of support: Windows Server 2016 — 12 Jan 2027 · SQL Server 2016 — 14 Jul 2026 · SQL Server 2014 — already ended (Jul 2024). Downgrade rights are a standard Product Terms right under Volume Licensing/CSP but can vary by channel (OEM/retail) — confirm with your licensing provider. Prices shown are estimates only.
@@ -4237,6 +4244,10 @@ function licRenderHolistic() {
   const dualPoolNote = licWinRows.some(r => r.existHas)
     ? '<div class="lic-note" style="color:#FBBF24;">ℹ️ One or more Windows Server rows below also have "Already have licensing" entered directly on that host. That is tracked separately from this Inventory and is NOT combined here, to avoid double-counting the same physical license — log it in whichever one view you\'re using per license, not both, or this holistic total will understate what you actually own.</div>'
     : '';
+  const hasServerCalRows = rows.some(r => r.label === 'SQL Server — Server License' || r.label === 'SQL Server — User CAL' || r.label === 'SQL Server — Device CAL');
+  const serverCalNote = hasServerCalRows
+    ? '<div class="lic-note">ℹ️ "SQL Server — Server License" and the per-core "SQL Server Standard/Enterprise" rows are ALTERNATIVE licensing models for the same SQL instance, not additive — the SQL Server calculator below prices per-core. The Server License count here is shown for reference only if you\'re actually using Server+CAL instead; it doesn\'t mean you need both.</div>'
+    : '';
   el.innerHTML =
     '<div class="lic-result-name" style="margin-bottom:8px;">Holistic Owned vs. Required</div>' +
     rows.map(r => {
@@ -4251,6 +4262,7 @@ function licRenderHolistic() {
       return `<div class="lic-opt"><span class="lic-opt-lbl">${r.label}</span><span class="lic-opt-packs">Owned ${r.owned}${mixTxt}${reqTxt}</span><span class="lic-opt-cost"><span class="lic-pill ${pillCls}">${pillTxt}</span></span></div>${eolNote}`;
     }).join('') +
     dualPoolNote +
+    serverCalNote +
     '<div class="lic-note">Owned totals sum across ALL logged licenses regardless of version — once a core is licensed you can run any supported version, so (EOL caveats aside) 2022 and 2025 Standard cores count together. SQL User/Device CALs are tracked but have no demand figure yet (the tool doesn\'t model SQL Server+CAL requirements).</div>';
 }
 
