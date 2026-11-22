@@ -1483,13 +1483,13 @@ body{background:var(--bg-base);}
       <div style="border-top:1px solid var(--border-subtle);padding:18px 24px;" id="lic-win-summary"></div>
     </div>
 
-    <!-- SQL Server 2022 Licensing -->
+    <!-- SQL Server Licensing -->
     <div class="card">
       <div class="card-header">
         <div class="card-title-wrap">
           <div class="card-icon ci-purple">🗄️</div>
           <div>
-            <div class="card-title">SQL Server 2022 Licensing</div>
+            <div class="card-title">SQL Server Licensing</div>
             <div class="card-desc">Per-VM core licensing — sold in 2-core packs only, minimum 4 core licenses per VM</div>
           </div>
         </div>
@@ -1602,7 +1602,7 @@ body{background:var(--bg-base);}
           <div class="card-icon ci-purple">📘</div>
           <div>
             <div class="card-title">Licensing Rules</div>
-            <div class="card-desc">Windows Server 2025 &amp; SQL Server 2022</div>
+            <div class="card-desc">Windows Server 2025 &amp; SQL Server</div>
           </div>
         </div>
       </div>
@@ -1613,7 +1613,7 @@ body{background:var(--bg-base);}
             License <strong style="color:var(--text-primary);">all physical cores</strong> on each host: minimum 8 core licenses per processor, 16 per host. <strong style="color:var(--text-primary);">Standard</strong> grants 2 Windows Server VMs per full core-set — stack complete sets for more VMs. <strong style="color:var(--text-primary);">Datacenter</strong> covers unlimited VMs. Licenses cannot be split across hosts.
           </div>
           <div class="ref-box">
-            <div class="ref-box-title" style="color:#34D399;">SQL Server 2022 — per VM</div>
+            <div class="ref-box-title" style="color:#34D399;">SQL Server — per VM</div>
             License all vCores in each SQL VM, minimum <strong style="color:var(--text-primary);">4 core licenses per VM</strong>, sold in 2-core packs only. <strong style="color:var(--text-primary);">Standard</strong> caps at 24 cores / 128 GB RAM per instance. <strong style="color:var(--text-primary);">Enterprise</strong> removes limits; licensing all physical host cores with Enterprise + SA allows unlimited SQL VMs on that host. Software Assurance is required for license mobility between hosts.
           </div>
           <div class="ref-box">
@@ -3647,12 +3647,12 @@ async function raidCopyClipboard() {
   }, 2000);
 }
 
-// ── Licensing Calculator (Windows Server 2025 + SQL Server 2022) ─────────────
+// ── Licensing Calculator (Windows Server 2025 + SQL Server) ──────────────────
 // Rules encoded:
 //  WS 2025 per-core: min 8 core licenses/processor, min 16/host; Standard = 2 VMs
 //  per full core-set (stack sets for more VMs); Datacenter = unlimited VMs.
 //  Licenses cannot span hosts, so pack maths is per host × host count.
-//  SQL 2022 per-VM: all vCores licensed, min 4/VM, 2-core packs only;
+//  SQL per-VM: all vCores licensed, min 4/VM, 2-core packs only;
 //  Standard capped at 24 cores / 128 GB per instance.
 //  State (licPrices / licWinRows / licSqlRows) is declared in the Data section at the top.
 
@@ -4112,8 +4112,8 @@ function licRenderSqlRows() {
         <div class="fg"><label class="fl">VM Count</label><input type="number" class="fi" min="1" value="${r.count}" onchange="licUpdateSql(${r.id},'count',this.value)"></div>
         <div class="fg"><label class="fl">vCores / VM</label><input type="number" class="fi" min="1" value="${r.vcores}" onchange="licUpdateSql(${r.id},'vcores',this.value)"></div>
         <div class="fg"><label class="fl">Target Edition</label><select class="fs" onchange="licUpdateSql(${r.id},'edition',this.value)">
-          <option value="standard"${r.edition === 'standard' ? ' selected' : ''}>SQL 2022 Standard</option>
-          <option value="enterprise"${r.edition === 'enterprise' ? ' selected' : ''}>SQL 2022 Enterprise</option>
+          <option value="standard"${r.edition === 'standard' ? ' selected' : ''}>Standard</option>
+          <option value="enterprise"${r.edition === 'enterprise' ? ' selected' : ''}>Enterprise</option>
         </select></div>
         <div class="fg wide"><label class="fl">Current Version (for the report)</label><input class="fi" value="${esc(r.cur || '')}" placeholder="e.g. SQL 2014 Express" onchange="licUpdateSql(${r.id},'cur',this.value)"></div>
       </div>
@@ -4177,8 +4177,8 @@ function licRenderSummaries() {
       ['Windows Server (existing version) Standard — 2-core pack',      s.existStd2,  licPrices.existStd2],
       ['Windows Server (existing version) Datacenter — 16-core license',s.existDc16,  licPrices.existDc16],
       ['Windows Server (existing version) Datacenter — 2-core pack',    s.existDc2,   licPrices.existDc2],
-      ['SQL Server 2022 Standard — 2-core pack',          s.sqlStd2, licPrices.sqlStd2],
-      ['SQL Server 2022 Enterprise — 2-core pack',        s.sqlEnt2, licPrices.sqlEnt2],
+      ['SQL Server Standard — 2-core pack',          s.sqlStd2, licPrices.sqlStd2],
+      ['SQL Server Enterprise — 2-core pack',        s.sqlEnt2, licPrices.sqlEnt2],
       ['Windows Server 2025 — User CAL',                  s.wsUserCal,  licPrices.wsUserCal],
       ['Windows Server 2025 — Device CAL',                s.wsDevCal,   licPrices.wsDevCal],
       ['RDS 2025 — User CAL',                             s.rdsUserCal, licPrices.rdsUserCal],
@@ -4340,7 +4340,7 @@ function licExportSection(row, D) {
     '  WINDOWS SERVER 2025',
     ...winLines,
     '',
-    '  SQL SERVER 2022',
+    '  SQL SERVER',
     ...sqlLines,
     '',
     '  CLIENT ACCESS LICENSES',
@@ -5139,7 +5139,7 @@ function exportXlsx() {
           ]; })
         : [['(no host groups with existing licensing entered)']]),
       blank(),
-      ['SQL SERVER 2022  (per-VM, 2-core packs)'],
+      ['SQL SERVER  (per-VM, 2-core packs)'],
       ['Group', 'Current Version', 'VMs', 'vCores / VM', 'Cores Licensed / VM', '2-core Packs / VM', 'Edition', 'Cost / VM', 'Total Cost', 'Note'],
       ...(lic.sql.length
         ? lic.sql.map(s => { const c = s.calc; return [s.row.name, s.row.cur || '', c.count, s.row.vcores, c.licCores, c.packsPerVM, s.row.edition, Math.round(c.costPerVM), Math.round(c.cost), c.overCap ? 'Exceeds SQL Standard 24-core cap — Enterprise required' : '']; })

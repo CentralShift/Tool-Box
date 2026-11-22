@@ -11,6 +11,12 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
+## 2026-11-23 — Claude — Drop hardcoded "2022" from the SQL Server calculator's labels
+
+- Per user decision on the flagged finding: relabeled only (kept one set of current pricing, no new version-split feature) — card title "SQL Server 2022 Licensing" → "SQL Server Licensing", reference card title/box, Target Edition dropdown ("SQL 2022 Standard/Enterprise" → "Standard"/"Enterprise"), and TXT/XLSX export section headers all drop the "2022". Accurate now that SQL Server 2025 is current (per the user's own license records) without implying the calculator only prices 2022; brace balance verified, no logic changes
+
+---
+
 ## 2026-11-23 — Claude — Licensing tab clarity pass: proactive dual-pool guidance, Server+CAL caveat, reference card catch-up
 
 - Requested review pass over the Licensing tab for improvements/clarity. Three copy-only fixes (no logic changes): (1) the dual-pool warning between License Inventory and per-host "Already have licensing" was previously reactive-only (appeared after the fact in Inventory's summary) — added a proactive note on the Windows Server card itself so the guidance works whichever one a user opens first; (2) added a note clarifying "SQL Server — Server License" and the per-core Standard/Enterprise rows are ALTERNATIVE licensing models for the same SQL instance, not additive, since the holistic summary could otherwise read as "you need both"; (3) the Licensing Rules reference card documented every other feature in the tab except License Inventory itself — added a ref-box explaining it and its relationship to the per-host gap analysis
