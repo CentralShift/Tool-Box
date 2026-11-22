@@ -1777,22 +1777,36 @@ let licCals = { users: 20, devices: 12, mode: 'auto', rdsUsers: 0, rdsDevices: 0
 // License Inventory — a flat ledger of licenses already owned, independent of which host they're
 // assigned to ("holistic" ownership vs the per-host-group gap analysis above, for when the host
 // breakdown isn't known yet). `coreBased` types sum cores×qty; everything else sums qty (a plain count).
+// `verKind` picks which version list/EOL table applies ('ws', 'sql', or null for non-version-specific).
 const LIC_INV_TYPES = [
-  {v:'ws-std-core',    l:'Windows Server Standard (per-core)',    coreBased:true,  defCores:16},
-  {v:'ws-dc-core',     l:'Windows Server Datacenter (per-core)',  coreBased:true,  defCores:16},
-  {v:'ws-user-cal',    l:'Windows Server — User CAL',              coreBased:false},
-  {v:'ws-device-cal',  l:'Windows Server — Device CAL',            coreBased:false},
-  {v:'rds-user-cal',   l:'RDS — User CAL',                         coreBased:false},
-  {v:'rds-device-cal', l:'RDS — Device CAL',                       coreBased:false},
-  {v:'sql-std-core',   l:'SQL Server Standard (per-core)',         coreBased:true,  defCores:2},
-  {v:'sql-ent-core',   l:'SQL Server Enterprise (per-core)',       coreBased:true,  defCores:2},
-  {v:'sql-server-lic', l:'SQL Server — Server License',            coreBased:false},
-  {v:'sql-user-cal',   l:'SQL Server — User CAL',                  coreBased:false},
-  {v:'sql-device-cal', l:'SQL Server — Device CAL',                coreBased:false},
-  {v:'other',          l:'Other / Unlisted',                       coreBased:false},
+  {v:'ws-std-core',    l:'Windows Server Standard (per-core)',    coreBased:true,  defCores:16, verKind:'ws'},
+  {v:'ws-dc-core',     l:'Windows Server Datacenter (per-core)',  coreBased:true,  defCores:16, verKind:'ws'},
+  {v:'ws-user-cal',    l:'Windows Server — User CAL',              coreBased:false, verKind:'ws'},
+  {v:'ws-device-cal',  l:'Windows Server — Device CAL',            coreBased:false, verKind:'ws'},
+  {v:'rds-user-cal',   l:'RDS — User CAL',                         coreBased:false, verKind:'ws'},
+  {v:'rds-device-cal', l:'RDS — Device CAL',                       coreBased:false, verKind:'ws'},
+  {v:'sql-std-core',   l:'SQL Server Standard (per-core)',         coreBased:true,  defCores:2, verKind:'sql'},
+  {v:'sql-ent-core',   l:'SQL Server Enterprise (per-core)',       coreBased:true,  defCores:2, verKind:'sql'},
+  {v:'sql-server-lic', l:'SQL Server — Server License',            coreBased:false, verKind:'sql'},
+  {v:'sql-user-cal',   l:'SQL Server — User CAL',                  coreBased:false, verKind:'sql'},
+  {v:'sql-device-cal', l:'SQL Server — Device CAL',                coreBased:false, verKind:'sql'},
+  {v:'other',          l:'Other / Unlisted',                       coreBased:false, verKind:null},
 ];
+const LIC_SQL_VERSIONS = ['2014', '2016', '2017', '2019', '2022', '2025'];
+// End-of-support dates (extended support). Already-passed dates reuse the ones cited elsewhere in this
+// app (2016 WS, 2016/2014 SQL); the rest are standard Microsoft lifecycle dates — confirm exact dates
+// with Microsoft's own lifecycle pages before relying on them. Status is computed live against today's
+// date (not hardcoded), so these correctly flip to "ended" as real time passes.
+const LIC_WS_EOL  = { '2012':'2023-10-10', '2012 R2':'2023-10-10', '2016':'2027-01-12', '2019':'2029-01-09', '2022':'2031-10-14' };
+const LIC_SQL_EOL = { '2014':'2024-07-09', '2016':'2026-07-14', '2017':'2027-10-12', '2019':'2030-01-08', '2022':'2033-01-11' };
+function licEolStatus(verKind, version) {
+  const date = verKind === 'ws' ? LIC_WS_EOL[version] : verKind === 'sql' ? LIC_SQL_EOL[version] : null;
+  if (!date) return null;
+  const monthsLeft = (new Date(date + 'T00:00:00') - new Date()) / (1000 * 60 * 60 * 24 * 30.44);
+  return { date, status: monthsLeft <= 0 ? 'ended' : monthsLeft <= 36 ? 'soon' : 'ok' };
+}
 let licInventory = [], licInvId = 0;
-const LIC_INV_COLS = ['Program', 'SKU', 'License', 'Type', 'Cores/Unit', 'Qty', 'Total', 'Purchase Date', 'SA / Expiry End', ''];
+const LIC_INV_COLS = ['Program', 'SKU', 'License', 'Version', 'Type', 'Cores/Unit', 'Qty', 'Total', 'Purchase Date', 'SA / Expiry End', ''];
 
 function primaryTopologyChanged() {
   const clustered = document.getElementById('hw-deployment').value === 'cluster';
@@ -3523,12 +3537,12 @@ function getExportText() {
     L,
   ].filter(l => l !== null).join('\n');
 
-  // Machine-readable block — v11 adds lic.inventory (the flat License Inventory ledger, independent
-  // of per-host assignment); v10 (vmGroups[].hostGroupId + editable hostGroups[].hypervisor), v9
+  // Machine-readable block — v12 adds lic.inventory[].version (for EOL/downgrade-rights awareness);
+  // v11 (lic.inventory itself), v10 (vmGroups[].hostGroupId + editable hostGroups[].hypervisor), v9
   // (existing-licensing gap), v8 (CALs), v7 (Licensing), v6 (Proposed Build Validator) and v5 fields
   // unchanged for back-compat
   const data = {
-    v: 11,
+    v: 12,
     vmHw: {
       name:       document.getElementById('hw-name').value,
       sockets:    hwSockN,
@@ -3792,24 +3806,34 @@ function computeLicensing() {
   return { win, sql, cal, shop, winCost, sqlCost, calCost: cal.cost, total: winCost + sqlCost + cal.cost };
 }
 
-// Sum the License Inventory by type (core-based types sum cores×qty; everything else sums qty as a plain count).
+// Sum the License Inventory by type (core-based types sum cores×qty; everything else sums qty as a plain
+// count), plus a per-type version breakdown and any EOL-flagged versions contributing to that total.
 function computeLicInventoryTotals() {
-  const owned = {};
-  LIC_INV_TYPES.forEach(t => owned[t.v] = 0);
+  const owned = {}, versionMix = {}, eolRisk = {};
+  LIC_INV_TYPES.forEach(t => { owned[t.v] = 0; versionMix[t.v] = {}; eolRisk[t.v] = []; });
   licInventory.forEach(r => {
     const t = LIC_INV_TYPES.find(x => x.v === r.type);
     if (!t) return;
     const qty = Math.max(0, r.qty || 0);
-    owned[r.type] += t.coreBased ? (Math.max(0, r.cores || 0) * qty) : qty;
+    const amt = t.coreBased ? (Math.max(0, r.cores || 0) * qty) : qty;
+    owned[r.type] += amt;
+    if (amt > 0 && r.version) {
+      versionMix[r.type][r.version] = (versionMix[r.type][r.version] || 0) + amt;
+      const eol = licEolStatus(t.verKind, r.version);
+      if (eol && eol.status !== 'ok') eolRisk[r.type].push({ version: r.version, amt, ...eol });
+    }
   });
-  return owned;
+  return { owned, versionMix, eolRisk };
 }
 
 // Holistic owned-vs-required — environment-wide totals, independent of which host owns which license.
 // Required Windows Server cores are summed by each row's own chosen edition (same logic as licWinCompute),
 // not forced into one edition, since different host groups can legitimately need different editions.
+// NOTE: "owned" here comes ONLY from the License Inventory — it is never combined with the per-host
+// "Already have licensing" fields on the Windows Server rows below, to avoid double-counting the same
+// physical license if it's logged in both places (see the dual-pool warning this returns separately).
 function computeLicHolistic() {
-  const owned = computeLicInventoryTotals();
+  const inv = computeLicInventoryTotals();
   let reqStd = 0, reqDc = 0;
   licWinRows.forEach(r => {
     const c = licWinCompute(r);
@@ -3826,30 +3850,32 @@ function computeLicHolistic() {
     if (r.edition === 'enterprise') reqSqlEnt += c.packs; else reqSqlStd += c.packs;
     reqSqlServers += c.count; // one server license per SQL instance under the Server+CAL model
   });
-  const row = (label, ownedVal, reqVal, hasDemand) => {
+  const row = (label, typeKey, reqVal, hasDemand) => {
+    const ownedVal = inv.owned[typeKey];
     const gap = hasDemand ? ownedVal - reqVal : null;
-    return { label, owned: ownedVal, required: hasDemand ? reqVal : null,
-             gap, status: !hasDemand ? null : (gap >= 0 ? 'sufficient' : 'short') };
+    return { label, owned: ownedVal, required: hasDemand ? reqVal : null, gap,
+             status: !hasDemand ? null : (gap >= 0 ? 'sufficient' : 'short'),
+             versionMix: inv.versionMix[typeKey], eolRisk: inv.eolRisk[typeKey] };
   };
   return [
-    row('Windows Server Standard (cores)',    owned['ws-std-core'],    reqStd,       true),
-    row('Windows Server Datacenter (cores)',  owned['ws-dc-core'],     reqDc,        true),
-    row('Windows Server — User CAL',          owned['ws-user-cal'],   reqWsUser,     true),
-    row('Windows Server — Device CAL',        owned['ws-device-cal'],reqWsDevice,    true),
-    row('RDS — User CAL',                     owned['rds-user-cal'], reqRdsUser,     true),
-    row('RDS — Device CAL',                   owned['rds-device-cal'],reqRdsDevice,  true),
-    row('SQL Server Standard (core packs)',   owned['sql-std-core'],  reqSqlStd,     true),
-    row('SQL Server Enterprise (core packs)', owned['sql-ent-core'],  reqSqlEnt,     true),
-    row('SQL Server — Server License',        owned['sql-server-lic'],reqSqlServers, true),
-    row('SQL Server — User CAL',              owned['sql-user-cal'],  0,             false),
-    row('SQL Server — Device CAL',            owned['sql-device-cal'],0,             false),
+    row('Windows Server Standard (cores)',    'ws-std-core',    reqStd,        true),
+    row('Windows Server Datacenter (cores)',  'ws-dc-core',     reqDc,         true),
+    row('Windows Server — User CAL',          'ws-user-cal',    reqWsUser,     true),
+    row('Windows Server — Device CAL',        'ws-device-cal',  reqWsDevice,   true),
+    row('RDS — User CAL',                     'rds-user-cal',   reqRdsUser,    true),
+    row('RDS — Device CAL',                   'rds-device-cal', reqRdsDevice,  true),
+    row('SQL Server Standard (core packs)',   'sql-std-core',   reqSqlStd,     true),
+    row('SQL Server Enterprise (core packs)', 'sql-ent-core',   reqSqlEnt,     true),
+    row('SQL Server — Server License',        'sql-server-lic',reqSqlServers, true),
+    row('SQL Server — User CAL',              'sql-user-cal',  0,             false),
+    row('SQL Server — Device CAL',            'sql-device-cal',0,             false),
   ];
 }
 
 // ── Licensing: row management ──
 function licAddInvRow() {
   licInvId++;
-  licInventory.push({ id: licInvId, program: '', sku: '', license: 'Windows Server Standard', type: 'ws-std-core', cores: 16, qty: 1, purchaseDate: '', saEnd: '' });
+  licInventory.push({ id: licInvId, program: '', sku: '', license: 'Windows Server Standard', type: 'ws-std-core', version: '2022', cores: 16, qty: 1, purchaseDate: '', saEnd: '' });
   licRenderAll();
 }
 function licUpdateInv(id, field, val) {
@@ -3857,6 +3883,12 @@ function licUpdateInv(id, field, val) {
   if (field === 'cores' || field === 'qty') r[field] = Math.max(0, parseFloat(val) || 0);
   else r[field] = val;
   licRenderAll();
+}
+// Parses common date text (e.g. "3/30/2026") and reports whether it's already in the past.
+function licDateIsPast(str) {
+  if (!str) return false;
+  const d = new Date(str);
+  return !isNaN(d.getTime()) && d.getTime() < Date.now();
 }
 function licRemoveInv(id) { licInventory = licInventory.filter(x => x.id !== id); licRenderAll(); }
 
@@ -4166,16 +4198,27 @@ function licRenderInventory() {
     body = '<tbody>' + licInventory.map(r => {
       const t = LIC_INV_TYPES.find(x => x.v === r.type) || LIC_INV_TYPES[0];
       const total = t.coreBased ? (Math.max(0, r.cores || 0) * Math.max(0, r.qty || 0)) : '—';
+      const verOpts = t.verKind === 'ws' ? LIC_EXIST_VERSIONS : t.verKind === 'sql' ? LIC_SQL_VERSIONS : null;
+      // Self-heal rows predating the version field (or carrying a value invalid for their current type)
+      // so the dropdown's visible selection always matches what's actually stored on the row.
+      if (verOpts && !verOpts.includes(r.version)) r.version = '2022';
+      const eol = verOpts ? licEolStatus(t.verKind, r.version) : null;
+      const eolBadge = eol && eol.status !== 'ok'
+        ? `<div style="margin-top:3px;"><span class="lic-pill ${eol.status === 'ended' ? 'bad' : 'warn'}">${eol.status === 'ended' ? 'EOL — ended' : 'EOL soon'} ${eol.date}</span></div>` : '';
+      const saExpired = licDateIsPast(r.saEnd);
       return `<tr>
         <td><input class="fi" value="${esc(r.program || '')}" onchange="licUpdateInv(${r.id},'program',this.value)"></td>
         <td><input class="fi" value="${esc(r.sku || '')}" onchange="licUpdateInv(${r.id},'sku',this.value)"></td>
         <td><input class="fi" style="min-width:170px;" value="${esc(r.license || '')}" onchange="licUpdateInv(${r.id},'license',this.value)"></td>
+        <td>${verOpts
+          ? `<select class="fs" onchange="licUpdateInv(${r.id},'version',this.value)">${verOpts.map(v => `<option value="${v}"${r.version === v ? ' selected' : ''}>${v}</option>`).join('')}</select>${eolBadge}`
+          : '<span style="color:var(--text-muted);">—</span>'}</td>
         <td><select class="fs" onchange="licUpdateInv(${r.id},'type',this.value)">${LIC_INV_TYPES.map(o => `<option value="${o.v}"${r.type === o.v ? ' selected' : ''}>${o.l}</option>`).join('')}</select></td>
         <td>${t.coreBased ? `<input type="number" class="fi" min="0" value="${r.cores}" onchange="licUpdateInv(${r.id},'cores',this.value)">` : '<span style="color:var(--text-muted);">—</span>'}</td>
         <td><input type="number" class="fi" min="0" value="${r.qty}" onchange="licUpdateInv(${r.id},'qty',this.value)"></td>
         <td class="mono r">${total}</td>
         <td><input class="fi" placeholder="e.g. 3/30/2026" value="${esc(r.purchaseDate || '')}" onchange="licUpdateInv(${r.id},'purchaseDate',this.value)"></td>
-        <td><input class="fi" placeholder="e.g. 3/30/2027" value="${esc(r.saEnd || '')}" onchange="licUpdateInv(${r.id},'saEnd',this.value)"></td>
+        <td><input class="fi" placeholder="e.g. 3/30/2027" value="${esc(r.saEnd || '')}" onchange="licUpdateInv(${r.id},'saEnd',this.value)">${saExpired ? '<div style="margin-top:3px;"><span class="lic-pill bad">SA expired</span></div>' : ''}</td>
         <td><button class="btn btn-danger btn-sm" type="button" onclick="licRemoveInv(${r.id})">✕</button></td>
       </tr>`;
     }).join('') + '</tbody>';
@@ -4191,15 +4234,24 @@ function licRenderHolistic() {
     el.innerHTML = '<span style="font-size:12px;color:var(--text-muted);">Add licenses above, and host groups / SQL VMs below, to see holistic owned-vs-required totals.</span>';
     return;
   }
+  const dualPoolNote = licWinRows.some(r => r.existHas)
+    ? '<div class="lic-note" style="color:#FBBF24;">ℹ️ One or more Windows Server rows below also have "Already have licensing" entered directly on that host. That is tracked separately from this Inventory and is NOT combined here, to avoid double-counting the same physical license — log it in whichever one view you\'re using per license, not both, or this holistic total will understate what you actually own.</div>'
+    : '';
   el.innerHTML =
     '<div class="lic-result-name" style="margin-bottom:8px;">Holistic Owned vs. Required</div>' +
     rows.map(r => {
       const pillCls  = r.status === null ? 'warn' : (r.status === 'sufficient' ? 'good' : 'bad');
       const pillTxt  = r.status === null ? 'owned only' : (r.status === 'sufficient' ? (r.gap > 0 ? `+${r.gap} spare` : 'exact') : `short ${-r.gap}`);
       const reqTxt   = r.required !== null ? ` vs required ${r.required}` : '';
-      return `<div class="lic-opt"><span class="lic-opt-lbl">${r.label}</span><span class="lic-opt-packs">Owned ${r.owned}${reqTxt}</span><span class="lic-opt-cost"><span class="lic-pill ${pillCls}">${pillTxt}</span></span></div>`;
+      const mixEntries = Object.entries(r.versionMix || {}).filter(([, n]) => n > 0);
+      const mixTxt = mixEntries.length > 1 ? ` (${mixEntries.map(([v, n]) => `${n}@${v}`).join(', ')})` : '';
+      const eolNote = (r.eolRisk || []).length
+        ? `<div class="lic-note" style="color:#F87171;">⚠ Includes ${r.eolRisk.map(e => `${e.amt} from ${e.version} (${e.status === 'ended' ? 'EOL — ended' : 'EOL'} ${e.date})`).join('; ')} — confirm downgrade rights or active Software Assurance before counting these toward hosts running a newer version.</div>`
+        : '';
+      return `<div class="lic-opt"><span class="lic-opt-lbl">${r.label}</span><span class="lic-opt-packs">Owned ${r.owned}${mixTxt}${reqTxt}</span><span class="lic-opt-cost"><span class="lic-pill ${pillCls}">${pillTxt}</span></span></div>${eolNote}`;
     }).join('') +
-    '<div class="lic-note">Owned totals sum across ALL logged licenses regardless of version — once a core is licensed you can run any supported version, so 2022 and 2025 Standard cores count together. SQL User/Device CALs are tracked but have no demand figure yet (the tool doesn\'t model SQL Server+CAL requirements).</div>';
+    dualPoolNote +
+    '<div class="lic-note">Owned totals sum across ALL logged licenses regardless of version — once a core is licensed you can run any supported version, so (EOL caveats aside) 2022 and 2025 Standard cores count together. SQL User/Device CALs are tracked but have no demand figure yet (the tool doesn\'t model SQL Server+CAL requirements).</div>';
 }
 
 function licRenderAll() { licRenderWinRows(); licRenderSqlRows(); licRenderCals(); licRenderInventory(); licRenderSummaries(); }
@@ -4248,15 +4300,22 @@ function licExportSection(row, D) {
   const invLines = licInventory.length ? licInventory.map(r => {
     const t = LIC_INV_TYPES.find(x => x.v === r.type) || LIC_INV_TYPES[0];
     const total = t.coreBased ? (Math.max(0, r.cores || 0) * Math.max(0, r.qty || 0)) : null;
-    return row('    ' + (r.license || t.l) + ':', r.qty + ' × ' + t.l + (total !== null ? '  (' + total + ' cores total)' : '')
-      + (r.purchaseDate ? '  purchased ' + r.purchaseDate : '') + (r.saEnd ? '  SA/expiry ' + r.saEnd : ''));
+    const eol = r.version ? licEolStatus(t.verKind, r.version) : null;
+    return row('    ' + (r.license || t.l) + ':', r.qty + ' × ' + t.l + (r.version ? '  (v' + r.version + ')' : '') + (total !== null ? '  (' + total + ' cores total)' : '')
+      + (eol && eol.status !== 'ok' ? '  [' + (eol.status === 'ended' ? 'EOL — ended' : 'EOL soon') + ' ' + eol.date + ']' : '')
+      + (r.purchaseDate ? '  purchased ' + r.purchaseDate : '') + (r.saEnd ? '  SA/expiry ' + r.saEnd + (licDateIsPast(r.saEnd) ? ' (EXPIRED)' : '') : ''));
   }) : ['  (no licenses logged)'];
   const holisticRows = computeLicHolistic().filter(r => r.owned > 0 || (r.required || 0) > 0);
-  const holisticLines = holisticRows.length ? holisticRows.map(r =>
-    row('    ' + r.label + ':', 'owned ' + r.owned + (r.required !== null
+  const holisticLines = holisticRows.length ? holisticRows.flatMap(r => {
+    const mixEntries = Object.entries(r.versionMix || {}).filter(([, n]) => n > 0);
+    const mixTxt = mixEntries.length > 1 ? '  (' + mixEntries.map(([v, n]) => n + '@' + v).join(', ') + ')' : '';
+    const lines = [row('    ' + r.label + ':', 'owned ' + r.owned + mixTxt + (r.required !== null
       ? ' vs required ' + r.required + '  [' + (r.status === 'sufficient' ? (r.gap > 0 ? 'surplus ' + r.gap : 'exact') : 'SHORT ' + (-r.gap)) + ']'
-      : '  (no demand modeled)'))
-  ) : ['  (add licenses and/or host groups / SQL VMs to compare)'];
+      : '  (no demand modeled)'))];
+    if ((r.eolRisk || []).length) lines.push(row('      Warning:', 'includes ' + r.eolRisk.map(e => e.amt + ' from ' + e.version + ' (' + (e.status === 'ended' ? 'EOL — ended' : 'EOL') + ' ' + e.date + ')').join('; ') + ' — confirm downgrade rights / active SA'));
+    return lines;
+  }) : ['  (add licenses and/or host groups / SQL VMs to compare)'];
+  if (licWinRows.some(r => r.existHas)) holisticLines.push(row('    Note:', 'per-host "Already have licensing" entries below are separate from this Inventory and are not combined — avoid logging the same license in both places'));
   return [
     '  LICENSING',
     D,
@@ -5030,20 +5089,27 @@ function exportXlsx() {
       ['MSP Toolbox — Licensing', '', ts],
       blank(),
       ['LICENSE INVENTORY  (owned, independent of host assignment)'],
-      ['Program', 'SKU', 'License', 'Type', 'Cores/Unit', 'Qty', 'Total Cores', 'Purchase Date', 'SA / Expiry End'],
+      ['Program', 'SKU', 'License', 'Version', 'Type', 'Cores/Unit', 'Qty', 'Total Cores', 'Purchase Date', 'SA / Expiry End', 'EOL Status', 'SA Status'],
       ...(licInventory.length
         ? licInventory.map(r => {
             const t = LIC_INV_TYPES.find(x => x.v === r.type) || LIC_INV_TYPES[0];
             const total = t.coreBased ? (Math.max(0, r.cores || 0) * Math.max(0, r.qty || 0)) : 0;
-            return [r.program || '', r.sku || '', r.license || '', t.l, t.coreBased ? r.cores : '', r.qty, total, r.purchaseDate || '', r.saEnd || ''];
+            const eol = r.version ? licEolStatus(t.verKind, r.version) : null;
+            return [r.program || '', r.sku || '', r.license || '', r.version || '', t.l, t.coreBased ? r.cores : '', r.qty, total, r.purchaseDate || '', r.saEnd || '',
+                    eol && eol.status !== 'ok' ? (eol.status === 'ended' ? 'EOL — ended ' + eol.date : 'EOL ' + eol.date) : '',
+                    licDateIsPast(r.saEnd) ? 'SA expired' : ''];
           })
         : [['(no licenses logged)']]),
       blank(),
       ['HOLISTIC OWNED VS REQUIRED  (environment-wide, independent of host assignment)'],
-      ['Resource', 'Owned', 'Required', 'Status'],
-      ...(computeLicHolistic().filter(r => r.owned > 0 || (r.required || 0) > 0).map(r =>
-        [r.label, r.owned, r.required !== null ? r.required : '(not modeled)',
-         r.status === null ? 'owned only' : (r.status === 'sufficient' ? (r.gap > 0 ? 'Surplus ' + r.gap : 'Exact') : 'Short ' + (-r.gap))])),
+      ['Resource', 'Owned', 'Version Mix', 'Required', 'Status', 'EOL Warning'],
+      ...(computeLicHolistic().filter(r => r.owned > 0 || (r.required || 0) > 0).map(r => {
+        const mixEntries = Object.entries(r.versionMix || {}).filter(([, n]) => n > 0);
+        return [r.label, r.owned, mixEntries.map(([v, n]) => n + '@' + v).join(', '), r.required !== null ? r.required : '(not modeled)',
+         r.status === null ? 'owned only' : (r.status === 'sufficient' ? (r.gap > 0 ? 'Surplus ' + r.gap : 'Exact') : 'Short ' + (-r.gap)),
+         (r.eolRisk || []).length ? r.eolRisk.map(e => e.amt + ' from ' + e.version + ' (' + (e.status === 'ended' ? 'EOL — ended' : 'EOL') + ' ' + e.date + ')').join('; ') : ''];
+      })),
+      ...(licWinRows.some(r => r.existHas) ? [['Note: per-host "Already have licensing" entries are separate from this Inventory and not combined — avoid logging the same license in both places']] : []),
       blank(),
       ['WINDOWS SERVER 2025  (per-core, per host)'],
       ['Group', 'Hosts', 'Cores to License / Host', 'Windows VMs', 'VMs / Host', 'Standard Best Mix', 'Standard Cost', 'Datacenter Best Mix', 'Datacenter Cost', 'Selected', 'Selected Cost'],

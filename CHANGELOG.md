@@ -11,6 +11,15 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
+## 2026-11-23 — Claude — License Inventory: track version per row, flag EOL/expired-SA, flag the dual-pool gap
+
+- Addressed: "a Windows Server 2016 entry would go against the calculations and no one would know" — License Inventory rows had no version field at all, so a logged Standard/Datacenter/CAL core could silently be an EOL version summed in at full face value with no visibility
+- Added a `version` dropdown per row (Windows types reuse `LIC_EXIST_VERSIONS`, now includes 2025; new `LIC_SQL_VERSIONS` for SQL types); `licEolStatus()` computes ended/soon/ok **live against today's date** (not a hardcoded flag that goes stale) using Microsoft's standard extended-support lifecycle dates — 2012/2012 R2 already ended (Oct 2023), 2016 ending within the next ~2 months, 2019/2022/SQL2016/2017/2019/2022 dated similarly; rows show an inline EOL badge, and the Holistic summary shows the version mix per resource (e.g. "32@2016, 48@2025") plus a red warning naming exactly which EOL-flagged cores are included, since a core license's right to run a NEWER version than purchased depends on active SA at release time or a fresh purchase — the tool doesn't adjudicate that, it surfaces the fact
+- Also checked the already-collected but previously-decorative "SA / Expiry End" field — now flags "SA expired" inline when that date has passed — and caught a second gap while looking for more: the per-host "Already have licensing" fields and this flat Inventory are two independent "owned" pools that are never combined (to avoid double-counting the same physical license entered in both places), which meant whichever view you weren't using could silently understate ownership with no indication; added a dual-pool note that appears whenever both are in use
+- Self-heals rows missing/carrying an invalid version (pre-v12 imports, or a type change) to a sane default, same pattern as the per-host existVersion fix; schema v11→v12, backward compatible (verified: v11 import without `version` renders correctly, round-trip v12 export→import verified exact); brace balance 1735/1735, TXT/XLSX export updated with version/EOL/SA columns
+
+---
+
 ## 2026-11-23 — Claude — Add License Inventory: a flat, holistic licensing ledger independent of host assignment
 
 - New card (first in the Licensing tab): a flat spreadsheet-style table (`licInventory[]`) for logging every license already owned — Program, SKU, License, Type, Cores/Unit, Qty, computed Total, Purchase Date, SA/Expiry End — with no per-host assignment required, since that information isn't always known up front. Sits alongside (not replacing) the existing per-host-group "Already have licensing" gap analysis, for when the host breakdown IS known
