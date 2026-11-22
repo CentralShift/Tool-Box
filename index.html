@@ -1555,9 +1555,13 @@ body{background:var(--bg-base);}
           <div class="fg"><label class="fl">Windows Server — Device CAL</label><input type="number" class="fi" id="lic-p-wsDevCal" min="0" step="1" oninput="licPriceUpdate('wsDevCal',this.value)"></div>
           <div class="fg"><label class="fl">RDS — User CAL</label><input type="number" class="fi" id="lic-p-rdsUserCal" min="0" step="1" oninput="licPriceUpdate('rdsUserCal',this.value)"></div>
           <div class="fg"><label class="fl">RDS — Device CAL</label><input type="number" class="fi" id="lic-p-rdsDevCal" min="0" step="1" oninput="licPriceUpdate('rdsDevCal',this.value)"></div>
+          <div class="fg"><label class="fl">Existing/Legacy Std — 16-core</label><input type="number" class="fi" id="lic-p-existStd16" min="0" step="1" oninput="licPriceUpdate('existStd16',this.value)"></div>
+          <div class="fg"><label class="fl">Existing/Legacy Std — 2-core pack</label><input type="number" class="fi" id="lic-p-existStd2" min="0" step="1" oninput="licPriceUpdate('existStd2',this.value)"></div>
+          <div class="fg"><label class="fl">Existing/Legacy DC — 16-core</label><input type="number" class="fi" id="lic-p-existDc16" min="0" step="1" oninput="licPriceUpdate('existDc16',this.value)"></div>
+          <div class="fg"><label class="fl">Existing/Legacy DC — 2-core pack</label><input type="number" class="fi" id="lic-p-existDc2" min="0" step="1" oninput="licPriceUpdate('existDc2',this.value)"></div>
         </div>
         <div style="font-size:11px;color:var(--text-muted);line-height:1.6;padding:8px 10px;margin-top:12px;background:rgba(255,255,255,0.025);border-radius:var(--radius-sm);">
-          ℹ️ Replace with your reseller / CSP pricing (e.g. AUD ex-GST). All calculations update live.
+          ℹ️ Replace with your reseller / CSP pricing (e.g. AUD ex-GST). "Existing/Legacy" defaults to approx. Windows Server 2022 list price — edit to match whatever version a client is topping up. All calculations update live.
         </div>
       </div>
     </div>
@@ -1591,8 +1595,12 @@ body{background:var(--bg-base);}
             <div class="ref-box-title" style="color:#FBBF24;">SQL Express — free, but limited</div>
             10 GB max per database, ~1.4 GB buffer pool memory, 4 cores / 1 socket max. Fine for small workloads — anything beyond these limits must move to Standard (full per-VM core licensing applies).
           </div>
+          <div class="ref-box">
+            <div class="ref-box-title" style="color:var(--accent-teal);">Topping up existing licensing</div>
+            Added cores (more sockets/cores, a bigger host) mean the <strong style="color:var(--text-primary);">whole host</strong> must be re-licensed to the new core count, in one edition. The shortfall can be bought as <strong style="color:var(--text-primary);">more of the same version</strong> (cheapest short-term, re-license again at EOL) or as the <strong style="color:var(--text-primary);">current version using downgrade rights</strong> (run the older OS today, no repurchase needed when you upgrade in place). Top-ups must match the edition already on the host — Standard core licenses can't be mixed with a Datacenter requirement.
+          </div>
           <div style="font-size:11px;color:var(--text-muted);line-height:1.6;padding:8px 10px;background:rgba(255,255,255,0.025);border-radius:var(--radius-sm);">
-            ⚠️ End of support: Windows Server 2016 — 12 Jan 2027 · SQL Server 2016 — 14 Jul 2026 · SQL Server 2014 — already ended (Jul 2024). Prices shown are estimates only — confirm with your licensing provider.
+            ⚠️ End of support: Windows Server 2016 — 12 Jan 2027 · SQL Server 2016 — 14 Jul 2026 · SQL Server 2014 — already ended (Jul 2024). Downgrade rights are a standard Product Terms right under Volume Licensing/CSP but can vary by channel (OEM/retail) — confirm with your licensing provider. Prices shown are estimates only.
           </div>
         </div>
       </div>
@@ -1714,7 +1722,8 @@ let proposedBuild = {
 };
 // Licensing tab state (calculator functions live in the Licensing section below)
 const LIC_DEFAULT_PRICES = { cur:'USD', wsStd16:1176, wsStd2:148, wsDc16:6771, wsDc2:847, sqlStd2:3945, sqlEnt2:15123,
-                             wsUserCal:50, wsDevCal:40, rdsUserCal:140, rdsDevCal:115 };
+                             wsUserCal:50, wsDevCal:40, rdsUserCal:140, rdsDevCal:115,
+                             existStd16:1069, existStd2:134, existDc16:6155, existDc2:769 };
 let licPrices  = { ...LIC_DEFAULT_PRICES };
 let licWinRows = [], licWinId = 0;
 let licSqlRows = [], licSqlId = 0;
@@ -3432,9 +3441,10 @@ function getExportText() {
     L,
   ].filter(l => l !== null).join('\n');
 
-  // Machine-readable block — v8 adds CALs to the Licensing block; v7 (Licensing), v6 (Proposed Build Validator) and v5 fields unchanged for back-compat
+  // Machine-readable block — v9 adds existing-licensing gap fields to Windows rows + 4 legacy price keys;
+  // v8 (CALs), v7 (Licensing), v6 (Proposed Build Validator) and v5 fields unchanged for back-compat
   const data = {
-    v: 8,
+    v: 9,
     vmHw: {
       name:       document.getElementById('hw-name').value,
       sockets:    hwSockN,
@@ -3590,6 +3600,35 @@ function licWinCompute(r) {
            chosenCost: chosen === 'standard' ? stdBest.cost : dcBest.cost };
 }
 
+// Existing-licensing gap for one Windows row — null when the row has no existing licensing entered.
+// Required/owned core counts are PER HOST (same convention as licWinCompute's stdCores/dcCores);
+// `isDC` is which edition the CUSTOMER'S EXISTING licensing is (not the auto-cheapest "chosen" edition
+// from licWinCompute) — the gap is always measured against what they actually hold today.
+function licWinGap(r, c) {
+  if (!r.existHas) return null;
+  const isDC          = r.existEdition === 'datacenter';
+  const requiredCores = isDC ? c.dcCores : c.stdCores;   // per host, for the edition they already hold
+  const ownedCores    = Math.max(0, r.existCores || 0);  // per host
+  const gapPerHost     = requiredCores - ownedCores;
+  const status = gapPerHost > 0 ? 'short' : gapPerHost < 0 ? 'surplus' : 'exact';
+  const p = licPrices;
+  let same = null, latest = null, cheaperTopUp = null;
+  if (gapPerHost > 0) {
+    const sameMix   = licBestMix(gapPerHost, isDC ? p.existDc16 : p.existStd16, isDC ? p.existDc2 : p.existStd2);
+    const latestMix = licBestMix(gapPerHost, isDC ? p.wsDc16    : p.wsStd16,    isDC ? p.wsDc2    : p.wsStd2);
+    same   = { n16: sameMix.n16   * c.hosts, n2: sameMix.n2   * c.hosts, cost: sameMix.cost   * c.hosts };
+    latest = { n16: latestMix.n16 * c.hosts, n2: latestMix.n2 * c.hosts, cost: latestMix.cost * c.hosts };
+    cheaperTopUp = same.cost <= latest.cost ? 'same' : 'latest';
+  }
+  const topUp = (r.existTopUp === 'same' || r.existTopUp === 'latest') ? r.existTopUp : cheaperTopUp;
+  const chosenTopUp = status === 'short' ? (topUp === 'same' ? same : latest) : null;
+  // Standard only: a full extra core-set already owned beyond the requirement grants 2 more VMs of headroom
+  const extraVmCapacity = (status === 'surplus' && !isDC) ? Math.floor((-gapPerHost) / c.coresPerHost) * 2 : null;
+  const mismatchTier = (isDC !== (c.chosen === 'datacenter')) ? c.chosen : null;
+  return { isDC, requiredCores, ownedCores, gapPerHost, totalGap: Math.max(0, gapPerHost) * c.hosts, status,
+           same, latest, cheaperTopUp, topUp, chosenTopUp, extraVmCapacity, mismatchTier };
+}
+
 function licSqlCompute(r) {
   const count      = Math.max(1, r.count || 1);
   const licCores   = Math.max(4, Math.max(1, r.vcores || 1));
@@ -3630,13 +3669,26 @@ function licCalCompute() {
 
 // Single source of truth — used by the live panels, TXT/PDF export, and XLSX export.
 function computeLicensing() {
-  const win = licWinRows.map(r => ({ row: r, calc: licWinCompute(r) }));
+  const win = licWinRows.map(r => { const calc = licWinCompute(r); return { row: r, calc, gap: licWinGap(r, calc) }; });
   const sql = licSqlRows.map(r => ({ row: r, calc: licSqlCompute(r) }));
   const cal = licCalCompute();
   const shop = { wsStd16: 0, wsStd2: 0, wsDc16: 0, wsDc2: 0, sqlStd2: 0, sqlEnt2: 0,
-                 wsUserCal: 0, wsDevCal: 0, rdsUserCal: 0, rdsDevCal: 0 };
+                 wsUserCal: 0, wsDevCal: 0, rdsUserCal: 0, rdsDevCal: 0,
+                 existStd16: 0, existStd2: 0, existDc16: 0, existDc2: 0 };
   let winCost = 0, sqlCost = 0;
   win.forEach(w => {
+    // With existing licensing entered, only the shortfall is a real purchase — buying from scratch
+    // (the "Requirement" shown in the row card) no longer applies once they already own some cores.
+    if (w.gap) {
+      if (w.gap.chosenTopUp) {
+        winCost += w.gap.chosenTopUp.cost;
+        if (w.gap.topUp === 'same') { if (w.gap.isDC) { shop.existDc16 += w.gap.chosenTopUp.n16; shop.existDc2 += w.gap.chosenTopUp.n2; }
+                                      else             { shop.existStd16 += w.gap.chosenTopUp.n16; shop.existStd2 += w.gap.chosenTopUp.n2; } }
+        else                         { if (w.gap.isDC) { shop.wsDc16  += w.gap.chosenTopUp.n16; shop.wsDc2  += w.gap.chosenTopUp.n2; }
+                                      else             { shop.wsStd16  += w.gap.chosenTopUp.n16; shop.wsStd2  += w.gap.chosenTopUp.n2; } }
+      }
+      return;
+    }
     winCost += w.calc.chosenCost;
     if (w.calc.chosen === 'standard') { shop.wsStd16 += w.calc.chosenMix.n16; shop.wsStd2 += w.calc.chosenMix.n2; }
     else                              { shop.wsDc16  += w.calc.chosenMix.n16; shop.wsDc2  += w.calc.chosenMix.n2; }
@@ -3653,14 +3705,16 @@ function computeLicensing() {
 // ── Licensing: row management ──
 function licAddWinRow() {
   licWinId++;
-  licWinRows.push({ id: licWinId, name: 'Host group ' + licWinId, hosts: 2, sockets: 2, cores: 12, vms: 4, mobility: true, edition: 'auto' });
+  licWinRows.push({ id: licWinId, name: 'Host group ' + licWinId, hosts: 2, sockets: 2, cores: 12, vms: 4, mobility: true, edition: 'auto',
+                    existHas: false, existEdition: 'standard', existVersion: '2022', existCores: 0, existTopUp: 'auto' });
   licRenderAll();
 }
 function licUpdateWin(id, field, val) {
   const r = licWinRows.find(x => x.id === id); if (!r) return;
   if (['hosts', 'sockets', 'cores'].includes(field)) r[field] = Math.max(1, parseInt(val) || 1);
-  else if (field === 'vms')      r[field] = Math.max(0, parseInt(val) || 0);
-  else if (field === 'mobility') r[field] = !!val;
+  else if (field === 'vms')        r[field] = Math.max(0, parseInt(val) || 0);
+  else if (field === 'mobility' || field === 'existHas') r[field] = !!val;
+  else if (field === 'existCores') r[field] = Math.max(0, parseInt(val) || 0);
   else r[field] = val;
   licRenderAll();
 }
@@ -3718,6 +3772,7 @@ function licPullFromEnvironment() {
     id: i + 1, name: g.name || g.model || ('Host group ' + (i + 1)),
     hosts: Math.max(1, g.count || 1), sockets: g.sockets || 2, cores: g.cores || 16,
     vms: i === 0 ? winSrvVMs : 0, mobility: g.mode === 'cluster', edition: 'auto',
+    existHas: false, existEdition: 'standard', existVersion: '2022', existCores: 0, existTopUp: 'auto',
   }));
   licWinId = licWinRows.length;
   licRenderAll();
@@ -3744,6 +3799,7 @@ function licRenderWinRows() {
   }
   el.innerHTML = licWinRows.map(r => {
     const c = licWinCompute(r);
+    const g = licWinGap(r, c);
     const pill = ed => c.cheaper === ed ? ' <span class="lic-pill good">cheapest</span>' : '';
     return `
     <div class="host-group">
@@ -3763,6 +3819,19 @@ function licRenderWinRows() {
           <option value="datacenter"${r.edition === 'datacenter' ? ' selected' : ''}>Datacenter</option>
         </select></div>
         <label class="ha-option"><input type="checkbox" ${r.mobility ? 'checked' : ''} onchange="licUpdateWin(${r.id},'mobility',this.checked)"> VMs move between hosts (cluster / live migration)</label>
+        <label class="ha-option"><input type="checkbox" ${r.existHas ? 'checked' : ''} onchange="licUpdateWin(${r.id},'existHas',this.checked)"> Already have licensing — check over/under</label>
+        ${r.existHas ? `
+        <div class="fg"><label class="fl">Existing Edition</label><select class="fs" onchange="licUpdateWin(${r.id},'existEdition',this.value)">
+          <option value="standard"${r.existEdition === 'standard' ? ' selected' : ''}>Standard</option>
+          <option value="datacenter"${r.existEdition === 'datacenter' ? ' selected' : ''}>Datacenter</option>
+        </select></div>
+        <div class="fg"><label class="fl">Existing Version</label><input class="fi" value="${esc(r.existVersion || '')}" placeholder="e.g. 2022" onchange="licUpdateWin(${r.id},'existVersion',this.value)"></div>
+        <div class="fg"><label class="fl">Core Licenses Owned / Host</label><input type="number" class="fi" min="0" value="${r.existCores}" onchange="licUpdateWin(${r.id},'existCores',this.value)"></div>
+        <div class="fg"><label class="fl">Top Up As</label><select class="fs" onchange="licUpdateWin(${r.id},'existTopUp',this.value)">
+          <option value="auto"${r.existTopUp === 'auto' ? ' selected' : ''}>Auto (cheapest)</option>
+          <option value="same"${r.existTopUp === 'same' ? ' selected' : ''}>Same version (${esc(r.existVersion || 'existing')})</option>
+          <option value="latest"${r.existTopUp === 'latest' ? ' selected' : ''}>Latest (2025) + downgrade</option>
+        </select></div>` : ''}
       </div>
       <div class="lic-result">
         <div class="lic-result-head">
@@ -3773,10 +3842,37 @@ function licRenderWinRows() {
         <div class="lic-opt"><span class="lic-opt-lbl">Standard — 2-core only</span><span class="lic-opt-packs">${licMixLbl(c.std2)}</span><span class="lic-opt-cost">${licMoney(c.std2.cost)}</span></div>
         <div class="lic-opt"><span class="lic-opt-lbl">Datacenter — best mix${pill('datacenter')}</span><span class="lic-opt-packs">${c.dcCores * c.hosts} cores → ${licMixLbl(c.dcBest)}</span><span class="lic-opt-cost">${licMoney(c.dcBest.cost)}</span></div>
         <div class="lic-opt"><span class="lic-opt-lbl">Datacenter — 2-core only</span><span class="lic-opt-packs">${licMixLbl(c.dc2)}</span><span class="lic-opt-cost">${licMoney(c.dc2.cost)}</span></div>
-        <div class="lic-note">Standard needs ${c.stdSets} full core-set${c.stdSets === 1 ? '' : 's'} per host (2 VMs per set).${c.breakEven ? ' Datacenter becomes the better buy at ~' + c.breakEven + ' VMs per host.' : ''}</div>
+        <div class="lic-note">Standard needs ${c.stdSets} full core-set${c.stdSets === 1 ? '' : 's'} per host (2 VMs per set).${c.breakEven ? ' Datacenter becomes the better buy at ~' + c.breakEven + ' VMs per host.' : ''}${r.existHas ? ' With existing licensing entered, only the shortfall below is a real purchase — ignore the from-scratch costs above.' : ''}</div>
       </div>
+      ${g ? licGapHtml(r, c, g) : ''}
     </div>`;
   }).join('');
+}
+
+function licGapHtml(r, c, g) {
+  const statusCls   = g.status === 'short' ? 'bad' : g.status === 'surplus' ? 'warn' : 'good';
+  const statusLabel = g.status === 'short' ? `Under-licensed by ${g.gapPerHost}/host` : g.status === 'surplus' ? `Over-licensed by ${-g.gapPerHost}/host` : 'Exactly licensed';
+  const editionLbl  = g.isDC ? 'Datacenter' : 'Standard';
+  const pillTopUp = p => g.cheaperTopUp === p ? ' <span class="lic-pill good">cheapest</span>' : '';
+  return `
+      <div class="lic-result">
+        <div class="lic-result-head">
+          <span class="lic-result-name">Existing Licensing — ${editionLbl} ${esc(r.existVersion || '')}</span>
+          <span class="lic-pill ${statusCls}">${statusLabel}</span>
+        </div>
+        <div class="lic-opt"><span class="lic-opt-lbl">Required (this edition)</span><span class="lic-opt-packs">${g.requiredCores} cores/host × ${c.hosts} host(s) = ${g.requiredCores * c.hosts} cores</span><span class="lic-opt-cost"></span></div>
+        <div class="lic-opt"><span class="lic-opt-lbl">Already owned</span><span class="lic-opt-packs">${g.ownedCores} cores/host × ${c.hosts} host(s) = ${g.ownedCores * c.hosts} cores</span><span class="lic-opt-cost"></span></div>
+        ${g.status === 'short' ? `
+        <div class="lic-opt"><span class="lic-opt-lbl">Top up — same version${pillTopUp('same')}</span><span class="lic-opt-packs">${g.totalGap} cores → ${licMixLbl(g.same)}</span><span class="lic-opt-cost">${licMoney(g.same.cost)}</span></div>
+        <div class="lic-opt"><span class="lic-opt-lbl">Top up — WS2025 + downgrade${pillTopUp('latest')}</span><span class="lic-opt-packs">${g.totalGap} cores → ${licMixLbl(g.latest)}</span><span class="lic-opt-cost">${licMoney(g.latest.cost)}</span></div>
+        <div class="lic-note">Short by ${g.gapPerHost} core license${g.gapPerHost === 1 ? '' : 's'}/host. Buying more of the <strong style="color:var(--text-primary);">same version</strong> keeps one SKU today but you'll re-license again at end of support; buying <strong style="color:var(--text-primary);">Windows Server 2025</strong> now and using downgrade rights to keep running ${esc(r.existVersion || 'the current version')} costs more up front but needs no repurchase when you upgrade the OS in place.</div>
+        ` : g.status === 'surplus' ? `
+        <div class="lic-note">Over-licensed by ${-g.gapPerHost} core license${(-g.gapPerHost) === 1 ? '' : 's'}/host — nothing to buy.${g.extraVmCapacity ? ` Enough spare core licensing for ${g.extraVmCapacity} more Windows Server VM${g.extraVmCapacity === 1 ? '' : 's'} before you'd need to top up.` : ''}</div>
+        ` : `
+        <div class="lic-note">Exactly licensed for the current core count — nothing to buy.</div>
+        `}
+        ${g.mismatchTier ? `<div class="lic-note">ℹ️ Existing licensing is ${editionLbl} but ${g.mismatchTier === 'datacenter' ? 'Datacenter' : 'Standard'} is the cheaper fit for this host's VM count — worth comparing a full switch instead of topping up ${editionLbl}.</div>` : ''}
+      </div>`;
 }
 
 function licRenderSqlRows() {
@@ -3859,6 +3955,10 @@ function licRenderSummaries() {
       ['Windows Server 2025 Standard — 2-core pack',      s.wsStd2,  licPrices.wsStd2],
       ['Windows Server 2025 Datacenter — 16-core license',s.wsDc16,  licPrices.wsDc16],
       ['Windows Server 2025 Datacenter — 2-core pack',    s.wsDc2,   licPrices.wsDc2],
+      ['Windows Server (existing version) Standard — 16-core license',  s.existStd16, licPrices.existStd16],
+      ['Windows Server (existing version) Standard — 2-core pack',      s.existStd2,  licPrices.existStd2],
+      ['Windows Server (existing version) Datacenter — 16-core license',s.existDc16,  licPrices.existDc16],
+      ['Windows Server (existing version) Datacenter — 2-core pack',    s.existDc2,   licPrices.existDc2],
       ['SQL Server 2022 Standard — 2-core pack',          s.sqlStd2, licPrices.sqlStd2],
       ['SQL Server 2022 Enterprise — 2-core pack',        s.sqlEnt2, licPrices.sqlEnt2],
       ['Windows Server 2025 — User CAL',                  s.wsUserCal,  licPrices.wsUserCal],
@@ -3883,13 +3983,23 @@ function licRenderAll() { licRenderWinRows(); licRenderSqlRows(); licRenderCals(
 function licExportSection(row, D) {
   const lic = computeLicensing();
   const winLines = lic.win.length ? lic.win.flatMap(w => {
-    const c = w.calc;
+    const c = w.calc, g = w.gap;
+    const gapLines = !g ? [] : g.status === 'short' ? [
+      row('    Existing:', g.requiredCores + ' cores/host required (' + (g.isDC ? 'Datacenter' : 'Standard') + ' ' + (w.row.existVersion || '') + ') vs ' + g.ownedCores + ' owned — short ' + g.gapPerHost + '/host'),
+      row('    Top up (same version):', licMixLbl(g.same) + ' = ' + licMoney(g.same.cost)),
+      row('    Top up (WS2025 + downgrade):', licMixLbl(g.latest) + ' = ' + licMoney(g.latest.cost)),
+    ] : g.status === 'surplus' ? [
+      row('    Existing:', g.requiredCores + ' cores/host required (' + (g.isDC ? 'Datacenter' : 'Standard') + ' ' + (w.row.existVersion || '') + ') vs ' + g.ownedCores + ' owned — surplus ' + (-g.gapPerHost) + '/host, nothing to buy'),
+    ] : [
+      row('    Existing:', g.requiredCores + ' cores/host required (' + (g.isDC ? 'Datacenter' : 'Standard') + ' ' + (w.row.existVersion || '') + ') — exactly licensed, nothing to buy'),
+    ];
     return [
       '  ' + w.row.name,
       row('    Requirement:', c.hosts + ' host(s) × ' + c.coresPerHost + ' core licenses · ' + c.vmsPerHost + ' VM(s)/host'),
       row('    Standard:', licMixLbl(c.stdBest) + ' = ' + licMoney(c.stdBest.cost) + '   [2-core only: ' + licMixLbl(c.std2) + ' = ' + licMoney(c.std2.cost) + ']'),
       row('    Datacenter:', licMixLbl(c.dcBest) + ' = ' + licMoney(c.dcBest.cost) + '   [2-core only: ' + licMixLbl(c.dc2) + ' = ' + licMoney(c.dc2.cost) + ']'),
-      row('    Selected:', (c.chosen === 'standard' ? 'Standard' : 'Datacenter') + ' = ' + licMoney(c.chosenCost)),
+      row('    Selected:', (c.chosen === 'standard' ? 'Standard' : 'Datacenter') + ' = ' + licMoney(c.chosenCost) + (g ? '  (ignored — existing licensing entered below)' : '')),
+      ...gapLines,
     ];
   }) : ['  (no Windows host groups defined)'];
   const sqlLines = lic.sql.length ? lic.sql.flatMap(s => {
@@ -4091,10 +4201,14 @@ function raidApplyImport(d) {
   renderProposedBuild();
 
   // ── Licensing tab (v7+; absent in v6/older imports — defaults are kept) ──
+  // Windows rows from a pre-v9 export simply lack existHas/existCores/etc. — treated as falsy/0, same as "no existing licensing entered".
   if (d.lic && typeof d.lic === 'object') {
     if (d.lic.prices && typeof d.lic.prices === 'object') licPrices = { ...licPrices, ...d.lic.prices };
     if (Array.isArray(d.lic.win)) {
-      licWinRows = d.lic.win.map((r, i) => ({ ...r, id: Number.isFinite(Number(r.id)) ? Number(r.id) : i + 1 }));
+      licWinRows = d.lic.win.map((r, i) => ({
+        existHas: false, existEdition: 'standard', existVersion: '2022', existCores: 0, existTopUp: 'auto',
+        ...r, id: Number.isFinite(Number(r.id)) ? Number(r.id) : i + 1,
+      }));
       licWinId = licWinRows.length ? Math.max(...licWinRows.map(r => r.id)) : 0;
     }
     if (Array.isArray(d.lic.sql)) {
@@ -4673,6 +4787,16 @@ function exportXlsx() {
       ...(lic.win.length
         ? lic.win.map(w => { const c = w.calc; return [w.row.name, c.hosts, c.coresPerHost, c.vms, c.vmsPerHost, licMixLbl(c.stdBest), Math.round(c.stdBest.cost), licMixLbl(c.dcBest), Math.round(c.dcBest.cost), c.chosen, Math.round(c.chosenCost)]; })
         : [['(none defined)']]),
+      blank(),
+      ['EXISTING LICENSING — GAP ANALYSIS  (per host group with existing licensing entered)'],
+      ['Group', 'Existing Edition', 'Existing Version', 'Required Cores/Host', 'Owned Cores/Host', 'Gap/Host', 'Status', 'Top Up (same version)', 'Cost', 'Top Up (WS2025 + downgrade)', 'Cost'],
+      ...(lic.win.some(w => w.gap)
+        ? lic.win.filter(w => w.gap).map(w => { const g = w.gap; return [
+            w.row.name, g.isDC ? 'Datacenter' : 'Standard', w.row.existVersion || '', g.requiredCores, g.ownedCores, g.gapPerHost, g.status,
+            g.same ? licMixLbl(g.same) : '', g.same ? Math.round(g.same.cost) : '',
+            g.latest ? licMixLbl(g.latest) : '', g.latest ? Math.round(g.latest.cost) : '',
+          ]; })
+        : [['(no host groups with existing licensing entered)']]),
       blank(),
       ['SQL SERVER 2022  (per-VM, 2-core packs)'],
       ['Group', 'Current Version', 'VMs', 'vCores / VM', 'Cores Licensed / VM', '2-core Packs / VM', 'Edition', 'Cost / VM', 'Total Cost', 'Note'],

@@ -11,6 +11,14 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
+## 2026-11-23 — Claude — Windows Server Licensing: existing-licensing gap analysis + downgrade-rights top-up
+
+- Each Windows host group row can now record existing licensing already owned (edition, version label, core licenses owned/host) via an "Already have licensing" toggle; gap is computed against the OWNED edition's requirement (not the auto-cheapest tier), independent of `licWinCompute`'s from-scratch sizing — flags Under-licensed / Over-licensed / Exactly licensed with numeric core gap, plus a mismatch note when the owned edition isn't the cheaper fit for the host's VM count
+- When short, shows two top-up purchase paths — buy more of the **same version** vs buy **Windows Server 2025 + downgrade rights** (run the existing OS now, no repurchase at upgrade time) — cheapest flagged, user can force either via a "Top Up As" selector; reuses the existing `licBestMix` 16-core/2-core-pack optimizer and new editable "Existing/Legacy" price fields (default ≈ WS2022 list price)
+- Cost Summary / TXT-PDF / XLSX now bill only the shortfall top-up cost for rows with existing licensing entered (not the full from-scratch cost); schema v8→v9 (exist* fields on Windows rows + 4 legacy price keys), fully backward compatible — v8 and older imports default cleanly (verified in-browser); brace balance 1588/1588, node --check passes, Node logic tests cover short/exact/surplus/mismatch/multi-host/forced-top-up, browser + XLSX + TXT export verified in both themes and mobile
+
+---
+
 ## 2026-07-15 — Claude — Licensing tab: add Windows Server + RDS CAL calculator
 
 - New "Client Access Licenses (CALs)" card on the Licensing tab: Windows Server CALs (every user/device accessing a server) and RDS CALs (Remote Desktop users/devices, on top of a Windows CAL) — user-vs-device comparison with auto-cheapest selection, aimed at shared-terminal sites (POS / gaming floor / kiosks, e.g. RSLs) where Device CALs usually win
