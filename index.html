@@ -1742,7 +1742,7 @@ const LIC_DEFAULT_PRICES = { cur:'USD', wsStd16:1176, wsStd2:148, wsDc16:6771, w
                              wsUserCal:50, wsDevCal:40, rdsUserCal:140, rdsDevCal:115,
                              existStd16:1069, existStd2:134, existDc16:6155, existDc2:769 };
 // Supported "existing version" options for the Windows Server top-up gap analysis (pre-2025 only — 2025 is the "latest" top-up path)
-const LIC_EXIST_VERSIONS = ['2012', '2012 R2', '2016', '2019', '2022'];
+const LIC_EXIST_VERSIONS = ['2012', '2012 R2', '2016', '2019', '2022', '2025'];
 let licPrices  = { ...LIC_DEFAULT_PRICES };
 let licWinRows = [], licWinId = 0;
 let licSqlRows = [], licSqlId = 0;
@@ -3644,6 +3644,7 @@ function licWinCompute(r) {
 function licWinGap(r, c) {
   if (!r.existHas) return null;
   const isDC          = r.existEdition === 'datacenter';
+  const isLatest      = r.existVersion === '2025'; // already on the current version — no "downgrade" top-up path makes sense
   const requiredCores = isDC ? c.dcCores : c.stdCores;   // per host, for the edition they already hold
   const ownedCores    = Math.max(0, r.existCores || 0);  // per host
   const gapPerHost     = requiredCores - ownedCores;
@@ -3651,18 +3652,22 @@ function licWinGap(r, c) {
   const p = licPrices;
   let same = null, latest = null, cheaperTopUp = null;
   if (gapPerHost > 0) {
-    const sameMix   = licBestMix(gapPerHost, isDC ? p.existDc16 : p.existStd16, isDC ? p.existDc2 : p.existStd2);
-    const latestMix = licBestMix(gapPerHost, isDC ? p.wsDc16    : p.wsStd16,    isDC ? p.wsDc2    : p.wsStd2);
+    // Already on 2025: topping up is just "more 2025 core licenses" — both paths are the same product,
+    // so both use the standard WS2025 price fields rather than the "Existing/Legacy" ones.
+    const sameMix   = isLatest
+      ? licBestMix(gapPerHost, isDC ? p.wsDc16 : p.wsStd16, isDC ? p.wsDc2 : p.wsStd2)
+      : licBestMix(gapPerHost, isDC ? p.existDc16 : p.existStd16, isDC ? p.existDc2 : p.existStd2);
+    const latestMix = licBestMix(gapPerHost, isDC ? p.wsDc16 : p.wsStd16, isDC ? p.wsDc2 : p.wsStd2);
     same   = { n16: sameMix.n16   * c.hosts, n2: sameMix.n2   * c.hosts, cost: sameMix.cost   * c.hosts };
     latest = { n16: latestMix.n16 * c.hosts, n2: latestMix.n2 * c.hosts, cost: latestMix.cost * c.hosts };
-    cheaperTopUp = same.cost <= latest.cost ? 'same' : 'latest';
+    cheaperTopUp = isLatest ? 'same' : (same.cost <= latest.cost ? 'same' : 'latest');
   }
-  const topUp = (r.existTopUp === 'same' || r.existTopUp === 'latest') ? r.existTopUp : cheaperTopUp;
+  const topUp = isLatest ? 'same' : ((r.existTopUp === 'same' || r.existTopUp === 'latest') ? r.existTopUp : cheaperTopUp);
   const chosenTopUp = status === 'short' ? (topUp === 'same' ? same : latest) : null;
   // Standard only: a full extra core-set already owned beyond the requirement grants 2 more VMs of headroom
   const extraVmCapacity = (status === 'surplus' && !isDC) ? Math.floor((-gapPerHost) / c.coresPerHost) * 2 : null;
   const mismatchTier = (isDC !== (c.chosen === 'datacenter')) ? c.chosen : null;
-  return { isDC, requiredCores, ownedCores, gapPerHost, totalGap: Math.max(0, gapPerHost) * c.hosts, status,
+  return { isDC, isLatest, requiredCores, ownedCores, gapPerHost, totalGap: Math.max(0, gapPerHost) * c.hosts, status,
            same, latest, cheaperTopUp, topUp, chosenTopUp, extraVmCapacity, mismatchTier };
 }
 
@@ -3848,8 +3853,9 @@ function licRenderWinRows() {
   }
   el.innerHTML = licWinRows.map(r => {
     // Self-heal rows predating this field (or carrying an invalid/free-text value) so the dropdown's
-    // visible selection always matches what's actually stored on the row.
-    if (!LIC_EXIST_VERSIONS.includes(r.existVersion)) r.existVersion = LIC_EXIST_VERSIONS[LIC_EXIST_VERSIONS.length - 1];
+    // visible selection always matches what's actually stored on the row. Defaults to 2022, not the
+    // newest entry (2025) — most legacy/unset rows represent genuinely older licensing to top up.
+    if (!LIC_EXIST_VERSIONS.includes(r.existVersion)) r.existVersion = '2022';
     const c = licWinCompute(r);
     const g = licWinGap(r, c);
     const pill = ed => c.cheaper === ed ? ' <span class="lic-pill good">cheapest</span>' : '';
@@ -3881,11 +3887,12 @@ function licRenderWinRows() {
           ${LIC_EXIST_VERSIONS.map(v => `<option value="${v}"${r.existVersion === v ? ' selected' : ''}>Windows Server ${v}</option>`).join('')}
         </select></div>
         <div class="fg"><label class="fl">Core Licenses Owned / Host</label><input type="number" class="fi" min="0" value="${r.existCores}" onchange="licUpdateWin(${r.id},'existCores',this.value)"></div>
+        ${r.existVersion === '2025' ? '' : `
         <div class="fg"><label class="fl">Top Up As</label><select class="fs" onchange="licUpdateWin(${r.id},'existTopUp',this.value)">
           <option value="auto"${r.existTopUp === 'auto' ? ' selected' : ''}>Auto (cheapest)</option>
           <option value="same"${r.existTopUp === 'same' ? ' selected' : ''}>Same version (${esc(r.existVersion || 'existing')})</option>
           <option value="latest"${r.existTopUp === 'latest' ? ' selected' : ''}>Latest (2025) + downgrade</option>
-        </select></div>` : ''}
+        </select></div>`}` : ''}
       </div>
       <div class="lic-result">
         <div class="lic-result-head">
@@ -3916,11 +3923,14 @@ function licGapHtml(r, c, g) {
         </div>
         <div class="lic-opt"><span class="lic-opt-lbl">Required (this edition)</span><span class="lic-opt-packs">${g.requiredCores} cores/host × ${c.hosts} host(s) = ${g.requiredCores * c.hosts} cores</span><span class="lic-opt-cost"></span></div>
         <div class="lic-opt"><span class="lic-opt-lbl">Already owned</span><span class="lic-opt-packs">${g.ownedCores} cores/host × ${c.hosts} host(s) = ${g.ownedCores * c.hosts} cores</span><span class="lic-opt-cost"></span></div>
-        ${g.status === 'short' ? `
+        ${g.status === 'short' ? (g.isLatest ? `
+        <div class="lic-opt"><span class="lic-opt-lbl">Top up — Windows Server 2025</span><span class="lic-opt-packs">${g.totalGap} cores → ${licMixLbl(g.same)}</span><span class="lic-opt-cost">${licMoney(g.same.cost)}</span></div>
+        <div class="lic-note">Short by ${g.gapPerHost} core license${g.gapPerHost === 1 ? '' : 's'}/host. Already on 2025, so this is simply more 2025 core licenses to cover the added cores — no version choice to make.</div>
+        ` : `
         <div class="lic-opt"><span class="lic-opt-lbl">Top up — same version${pillTopUp('same')}</span><span class="lic-opt-packs">${g.totalGap} cores → ${licMixLbl(g.same)}</span><span class="lic-opt-cost">${licMoney(g.same.cost)}</span></div>
         <div class="lic-opt"><span class="lic-opt-lbl">Top up — WS2025 + downgrade${pillTopUp('latest')}</span><span class="lic-opt-packs">${g.totalGap} cores → ${licMixLbl(g.latest)}</span><span class="lic-opt-cost">${licMoney(g.latest.cost)}</span></div>
         <div class="lic-note">Short by ${g.gapPerHost} core license${g.gapPerHost === 1 ? '' : 's'}/host. Buying more of the <strong style="color:var(--text-primary);">same version</strong> keeps one SKU today but you'll re-license again at end of support; buying <strong style="color:var(--text-primary);">Windows Server 2025</strong> now and using downgrade rights to keep running ${esc(r.existVersion || 'the current version')} costs more up front but needs no repurchase when you upgrade the OS in place.</div>
-        ` : g.status === 'surplus' ? `
+        `) : g.status === 'surplus' ? `
         <div class="lic-note">Over-licensed by ${-g.gapPerHost} core license${(-g.gapPerHost) === 1 ? '' : 's'}/host — nothing to buy.${g.extraVmCapacity ? ` Enough spare core licensing for ${g.extraVmCapacity} more Windows Server VM${g.extraVmCapacity === 1 ? '' : 's'} before you'd need to top up.` : ''}</div>
         ` : `
         <div class="lic-note">Exactly licensed for the current core count — nothing to buy.</div>

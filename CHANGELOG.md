@@ -11,6 +11,15 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
+## 2026-11-23 — Claude — Add Windows Server 2025 to the Licensing tab's "Existing Version" list
+
+- `LIC_EXIST_VERSIONS` stopped at 2022 — no way to record existing licensing that's already on 2025 (e.g. a host grew cores after already being licensed as 2025)
+- When existing version is 2025, `licWinGap()` now sources BOTH top-up paths from the standard WS2025 price fields instead of the "Existing/Legacy" ones (topping up 2025 is just buying more 2025, not a version swap), the "Top Up As" selector is hidden (there's no real choice), and the row shows a single "Top up — Windows Server 2025" line instead of the "same version vs. downgrade rights" framing, which doesn't apply when there's no version gap
+- Self-heal default (for rows predating the existVersion field) explicitly stays `'2022'`, not "last in list" — most legacy/unset rows represent real older licensing to top up, not 2025
+- Verified in-browser: dropdown offers 2025, selecting it hides Top Up As and collapses to one combined top-up cost, non-2025 versions are unaffected (regression-checked against 2022); TXT/XLSX export unaffected
+
+---
+
 ## 2026-11-23 — Claude — Add specific Windows Server versions to the VM Workload Group OS list
 
 - `OS_OPTS` only had a single generic "Windows Server" entry — no way to record which version a VM is actually running. Added Windows Server 2025 / 2022 / 2019 / 2016 (2016 flagged "EOL Jan 2027", matching the date already cited in the Licensing Rules card) as distinct selectable options
