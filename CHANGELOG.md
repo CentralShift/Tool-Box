@@ -11,6 +11,13 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
+## 2026-11-23 — Claude — Fix: "Existing Version" is now a dropdown, not free text
+
+- Replaced the free-text "Existing Version" input with a `<select>` (`LIC_EXIST_VERSIONS`: 2012 / 2012 R2 / 2016 / 2019 / 2022) so it can't be mistyped; existing rows created before this field existed (or carrying an invalid value) self-heal to the latest pre-2025 option on render, so the visible selection always matches what's actually stored on the row
+- Caught by clicking through the real UI (toggle checkbox → dropdown → cores-owned input → Top Up As override) rather than only calling the calc functions directly — the dropdown had been silently showing "2012" (just the first `<option>`) while the row's actual `existVersion` was `undefined`; confirmed fixed and the full flow (gap panel + Cost Summary line items) updates live through real clicks/typing, not just JS calls
+
+---
+
 ## 2026-11-23 — Claude — Windows Server Licensing: existing-licensing gap analysis + downgrade-rights top-up
 
 - Each Windows host group row can now record existing licensing already owned (edition, version label, core licenses owned/host) via an "Already have licensing" toggle; gap is computed against the OWNED edition's requirement (not the auto-cheapest tier), independent of `licWinCompute`'s from-scratch sizing — flags Under-licensed / Over-licensed / Exactly licensed with numeric core gap, plus a mismatch note when the owned edition isn't the cheaper fit for the host's VM count

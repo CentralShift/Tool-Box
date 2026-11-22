@@ -1724,6 +1724,8 @@ let proposedBuild = {
 const LIC_DEFAULT_PRICES = { cur:'USD', wsStd16:1176, wsStd2:148, wsDc16:6771, wsDc2:847, sqlStd2:3945, sqlEnt2:15123,
                              wsUserCal:50, wsDevCal:40, rdsUserCal:140, rdsDevCal:115,
                              existStd16:1069, existStd2:134, existDc16:6155, existDc2:769 };
+// Supported "existing version" options for the Windows Server top-up gap analysis (pre-2025 only — 2025 is the "latest" top-up path)
+const LIC_EXIST_VERSIONS = ['2012', '2012 R2', '2016', '2019', '2022'];
 let licPrices  = { ...LIC_DEFAULT_PRICES };
 let licWinRows = [], licWinId = 0;
 let licSqlRows = [], licSqlId = 0;
@@ -3798,6 +3800,9 @@ function licRenderWinRows() {
     return;
   }
   el.innerHTML = licWinRows.map(r => {
+    // Self-heal rows predating this field (or carrying an invalid/free-text value) so the dropdown's
+    // visible selection always matches what's actually stored on the row.
+    if (!LIC_EXIST_VERSIONS.includes(r.existVersion)) r.existVersion = LIC_EXIST_VERSIONS[LIC_EXIST_VERSIONS.length - 1];
     const c = licWinCompute(r);
     const g = licWinGap(r, c);
     const pill = ed => c.cheaper === ed ? ' <span class="lic-pill good">cheapest</span>' : '';
@@ -3825,7 +3830,9 @@ function licRenderWinRows() {
           <option value="standard"${r.existEdition === 'standard' ? ' selected' : ''}>Standard</option>
           <option value="datacenter"${r.existEdition === 'datacenter' ? ' selected' : ''}>Datacenter</option>
         </select></div>
-        <div class="fg"><label class="fl">Existing Version</label><input class="fi" value="${esc(r.existVersion || '')}" placeholder="e.g. 2022" onchange="licUpdateWin(${r.id},'existVersion',this.value)"></div>
+        <div class="fg"><label class="fl">Existing Version</label><select class="fs" onchange="licUpdateWin(${r.id},'existVersion',this.value)">
+          ${LIC_EXIST_VERSIONS.map(v => `<option value="${v}"${r.existVersion === v ? ' selected' : ''}>Windows Server ${v}</option>`).join('')}
+        </select></div>
         <div class="fg"><label class="fl">Core Licenses Owned / Host</label><input type="number" class="fi" min="0" value="${r.existCores}" onchange="licUpdateWin(${r.id},'existCores',this.value)"></div>
         <div class="fg"><label class="fl">Top Up As</label><select class="fs" onchange="licUpdateWin(${r.id},'existTopUp',this.value)">
           <option value="auto"${r.existTopUp === 'auto' ? ' selected' : ''}>Auto (cheapest)</option>
