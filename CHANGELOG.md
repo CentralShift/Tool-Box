@@ -11,6 +11,15 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
+## 2026-11-23 — Claude — Fix: host groups couldn't have a different hypervisor; Windows licensing billed the wrong host group
+
+- Confirmed via reproduction: a VMware primary host (Linux VMs only) + an additional Hyper-V cluster (the actual Windows VMs) — "Pull from Environment" billed all 5 Windows Server VMs to the VMware host and 0 to the Hyper-V cluster that needed them, because `licPullFromEnvironment()` dumped the total Windows VM count onto whichever host group happened to be first in the list, every other group got 0, regardless of where the VMs actually ran
+- Root cause of the "can't choose a different OS" complaint: additional host groups (`renderHostGroups()`) never rendered a Hypervisor `<select>` at all, even though the data model (`hypervisor` field, defaulted to `'vmware'`) already supported it — added the missing selector (`HYPERVISOR_OPTS`, mirrors the primary group's options)
+- Added a "Runs On" field to each VM Workload Group (`hostGroupId`, defaults to the primary host group) so each group of VMs can be assigned to the host group it actually runs on; `licPullFromEnvironment()` now sums Windows Server VMs **per assigned host group** instead of dumping everything on index 0, with safe fallback to primary for unassigned/invalid/excluded assignments; Licensing rows now show a hypervisor badge for visual confirmation, and a new reference card note explains licensing is per-host-core, not per-hypervisor
+- Schema v9→v10 (`vmGroups[].hostGroupId`, `hostGroups[].hypervisor` now user-editable); fully backward compatible — v9 and older imports default every VM group to the primary host group (same effective behavior as before this fix), verified in-browser; brace balance 1614/1614, reproduced the bug and confirmed the fix via the real UI (clicks/selects, not just JS calls) both before and after
+
+---
+
 ## 2026-11-23 — Claude — Fix: "Existing Version" is now a dropdown, not free text
 
 - Replaced the free-text "Existing Version" input with a `<select>` (`LIC_EXIST_VERSIONS`: 2012 / 2012 R2 / 2016 / 2019 / 2022) so it can't be mistyped; existing rows created before this field existed (or carrying an invalid value) self-heal to the latest pre-2025 option on render, so the visible selection always matches what's actually stored on the row

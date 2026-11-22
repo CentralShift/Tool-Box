@@ -1599,6 +1599,10 @@ body{background:var(--bg-base);}
             <div class="ref-box-title" style="color:var(--accent-teal);">Topping up existing licensing</div>
             Added cores (more sockets/cores, a bigger host) mean the <strong style="color:var(--text-primary);">whole host</strong> must be re-licensed to the new core count, in one edition. The shortfall can be bought as <strong style="color:var(--text-primary);">more of the same version</strong> (cheapest short-term, re-license again at EOL) or as the <strong style="color:var(--text-primary);">current version using downgrade rights</strong> (run the older OS today, no repurchase needed when you upgrade in place). Top-ups must match the edition already on the host — Standard core licenses can't be mixed with a Datacenter requirement.
           </div>
+          <div class="ref-box">
+            <div class="ref-box-title" style="color:#F59E0B;">Licensing applies to the host, not the hypervisor</div>
+            Per-core Windows Server licensing is based on the <strong style="color:var(--text-primary);">physical host's cores and how many Windows Server VMs it runs</strong> — it doesn't matter whether that host runs VMware, Hyper-V, Proxmox or anything else. A VMware host running only Linux VMs needs zero Windows Server core licenses; a Hyper-V host running Windows VMs needs them even though the Hyper-V role itself is free. Use each VM workload group's <strong style="color:var(--text-primary);">Runs On</strong> field (Environment tab) to assign it to the right host group, then <strong style="color:var(--text-primary);">Pull from Environment</strong> here — otherwise Windows VMs can get billed to the wrong host group.
+          </div>
           <div style="font-size:11px;color:var(--text-muted);line-height:1.6;padding:8px 10px;background:rgba(255,255,255,0.025);border-radius:var(--radius-sm);">
             ⚠️ End of support: Windows Server 2016 — 12 Jan 2027 · SQL Server 2016 — 14 Jul 2026 · SQL Server 2014 — already ended (Jul 2024). Downgrade rights are a standard Product Terms right under Volume Licensing/CSP but can vary by channel (OEM/retail) — confirm with your licensing provider. Prices shown are estimates only.
           </div>
@@ -1706,6 +1710,15 @@ const SQL_EDITIONS = [
   {v:'developer',  l:'SQL Developer (Free)'},
 ];
 
+// Mirrors the primary host group's #hw-hypervisor options — used for additional host groups' select.
+const HYPERVISOR_OPTS = [
+  {v:'vmware',  l:'VMware vSphere / ESXi'},
+  {v:'hyperv',  l:'Microsoft Hyper-V'},
+  {v:'proxmox', l:'Proxmox VE'},
+  {v:'nutanix', l:'Nutanix AHV'},
+  {v:'other',   l:'Other / Bare Metal'},
+];
+
 let groups = [];
 let gid = 0;
 let calcLog = [];
@@ -1773,6 +1786,7 @@ function renderHostGroups() {
         <div class="fg"><label class="fl">CPU GHz</label><input type="number" class="fi" min="0.1" step="0.1" value="${g.ghz}" onchange="updateHostGroup(${g.id},'ghz',this.value)"></div>
         <div class="fg"><label class="fl">RAM / Server (GB)</label><input type="number" class="fi" min="1" value="${g.ram}" onchange="updateHostGroup(${g.id},'ram',this.value)"></div>
         <div class="fg"><label class="fl">Local Storage / Server (TB)</label><input type="number" class="fi" min="0" step="0.1" value="${g.storage}" onchange="updateHostGroup(${g.id},'storage',this.value)"></div>
+        <div class="fg"><label class="fl">Hypervisor</label><select class="fs" onchange="updateHostGroup(${g.id},'hypervisor',this.value)">${HYPERVISOR_OPTS.map(h=>`<option value="${h.v}"${g.hypervisor===h.v?' selected':''}>${h.l}</option>`).join('')}</select></div>
         <div class="fg"><label class="fl">Storage Attachment</label><select class="fs" onchange="updateHostGroup(${g.id},'storageMode',this.value)"><option value="local"${g.storageMode==='local'?' selected':''}>Local only</option><option value="shared"${g.storageMode==='shared'?' selected':''}>Shared SAN / NAS</option><option value="both"${g.storageMode==='both'?' selected':''}>Local + shared</option></select></div>
         <label class="ha-option"><input type="checkbox" ${g.ht?'checked':''} onchange="updateHostGroup(${g.id},'ht',this.checked)"> Hyperthreading enabled</label>
         ${g.mode==='cluster'?`<label class="ha-option"><input type="checkbox" ${g.haReserve?'checked':''} onchange="updateHostGroup(${g.id},'haReserve',this.checked)"> Reserve one node for HA (N+1)</label>`:''}
@@ -1806,6 +1820,11 @@ function getInfrastructureModel(){
   allGroups.forEach(g=>{const count=Math.max(1,g.count||1);serverCount+=count;const reserved=g.mode==='cluster'&&g.haReserve&&count>1?1:0;const usableCount=g.role==='backup'?0:Math.max(0,count-reserved);effectiveComputeHosts+=usableCount;logicalCPU+=usableCount*g.sockets*g.cores*(g.ht?2:1);ramGB+=usableCount*g.ram;if(g.storageMode!=='shared')localTB+=count*g.storage;});
   const sharedTB=sans.reduce((sum,s)=>sum+(parseFloat(s.usableTB)||0),0);
   return {groups:allGroups,sans:[...sans],logicalCPU,ramGB,localTB,sharedTB,storageTB:localTB+sharedTB,serverCount,effectiveComputeHosts};
+}
+
+// Host groups a VM workload group can be assigned to run on (id 0 = primary, matching readPrimaryHostGroup()).
+function hostGroupOptions(){
+  return getInfrastructureModel().groups.map(g=>({id:g.id, label:g.name||g.model||(g.id===0?'Primary host group':('Host group '+g.id))}));
 }
 
 function renderTopology(){
@@ -2002,7 +2021,7 @@ function renderProposedResults(){
 // ── Group CRUD ────────────────────────────────────────────────────────────────
 function addVMGroup(name='') {
   gid++;
-  groups.push({id:gid, name:name||`VM Group ${gid}`, os:'windows-server', vcpu:2, ram:8, storage:100, count:1, sql:false, sqlEdition:'standard'});
+  groups.push({id:gid, name:name||`VM Group ${gid}`, os:'windows-server', vcpu:2, ram:8, storage:100, count:1, sql:false, sqlEdition:'standard', hostGroupId:0});
   renderGroups();
 }
 
@@ -2025,6 +2044,8 @@ function updateGroup(id, field, val) {
     g[field] = Math.max(0, Math.round(parseFloat(val)||0));
   } else if (field==='sql') {
     g.sql = val;
+  } else if (field==='hostGroupId') {
+    g[field] = parseInt(val) || 0;
   } else {
     g[field] = val;
   }
@@ -2038,11 +2059,13 @@ function renderGroups() {
     renderProposedResults();
     return;
   }
+  const hgOpts = hostGroupOptions();
   c.innerHTML = groups.map(g => {
     const o = OS_OPTS.find(x=>x.v===g.os)||OS_OPTS[0];
     const hasSQL = g.sql || o.sql;
     const icon = o.win ? '🪟' : '🐧';
     const sqlEdOpts = SQL_EDITIONS.map(e=>`<option value="${e.v}"${g.sqlEdition===e.v?' selected':''}>${e.l}</option>`).join('');
+    const runsOn = hgOpts.some(h=>h.id===(g.hostGroupId||0)) ? (g.hostGroupId||0) : 0;
     return `
     <div class="vm-group">
       <div class="vm-group-head">
@@ -2058,6 +2081,12 @@ function renderGroups() {
           <label class="fl">Operating System</label>
           <select class="fs" onchange="updateGroup(${g.id},'os',this.value)">
             ${OS_OPTS.map(op=>`<option value="${op.v}"${g.os===op.v?' selected':''}>${op.l}</option>`).join('')}
+          </select>
+        </div>
+        <div class="fg span2">
+          <label class="fl">Runs On ${infoIcon('Which host group this VM group is hosted on. Used by the Licensing tab Pull from Environment button to attribute Windows Server VMs to the correct host when different host groups run different hypervisors (e.g. a VMware group vs a Hyper-V cluster).')}</label>
+          <select class="fs" onchange="updateGroup(${g.id},'hostGroupId',this.value)">
+            ${hgOpts.map(h=>`<option value="${h.id}"${runsOn===h.id?' selected':''}>${esc(h.label)}</option>`).join('')}
           </select>
         </div>
         <div class="fg">
@@ -3443,10 +3472,11 @@ function getExportText() {
     L,
   ].filter(l => l !== null).join('\n');
 
-  // Machine-readable block — v9 adds existing-licensing gap fields to Windows rows + 4 legacy price keys;
-  // v8 (CALs), v7 (Licensing), v6 (Proposed Build Validator) and v5 fields unchanged for back-compat
+  // Machine-readable block — v10 adds vmGroups[].hostGroupId (which host group a VM group runs on,
+  // for correct per-host Windows licensing) + hostGroups[].hypervisor is now user-editable;
+  // v9 (existing-licensing gap), v8 (CALs), v7 (Licensing), v6 (Proposed Build Validator) and v5 fields unchanged for back-compat
   const data = {
-    v: 9,
+    v: 10,
     vmHw: {
       name:       document.getElementById('hw-name').value,
       sockets:    hwSockN,
@@ -3763,17 +3793,29 @@ function licResetPrices() { licPrices = { ...LIC_DEFAULT_PRICES }; licSyncPriceI
 // ── Licensing: pull from Environment ──
 function licPullFromEnvironment() {
   const infra = getInfrastructureModel();
-  let winSrvVMs = 0;
-  groups.forEach(g => {
-    const o = OS_OPTS.find(x => x.v === g.os) || {};
-    if (o.win && g.os !== 'windows-10-11') winSrvVMs += Math.max(1, g.count || 1);
-  });
   const src = infra.groups.filter(g => g.role !== 'backup');
   const list = src.length ? src : infra.groups;
+  const validIds = new Set(infra.groups.map(g => g.id));
+  const listIds  = new Set(list.map(g => g.id));
+  // Sum Windows Server VMs per the host group each VM workload group is actually assigned to run on
+  // (its "Runs On" field) — this is what makes licensing correct when host groups run different
+  // hypervisors/workloads (e.g. a VMware group with Linux VMs vs a Hyper-V cluster with the Windows
+  // VMs). Falls back to the primary host group (id 0) for unassigned/invalid groups, and reroutes to
+  // the first listed row if a VM group is assigned to a host group excluded here (e.g. backup-only).
+  const winByHost = {};
+  groups.forEach(g => {
+    const o = OS_OPTS.find(x => x.v === g.os) || {};
+    if (!o.win || g.os === 'windows-10-11') return;
+    const n = Math.max(1, g.count || 1);
+    let hid = validIds.has(g.hostGroupId) ? g.hostGroupId : 0;
+    if (!listIds.has(hid)) hid = list[0] ? list[0].id : hid;
+    winByHost[hid] = (winByHost[hid] || 0) + n;
+  });
   licWinRows = list.map((g, i) => ({
     id: i + 1, name: g.name || g.model || ('Host group ' + (i + 1)),
     hosts: Math.max(1, g.count || 1), sockets: g.sockets || 2, cores: g.cores || 16,
-    vms: i === 0 ? winSrvVMs : 0, mobility: g.mode === 'cluster', edition: 'auto',
+    vms: winByHost[g.id] || 0, mobility: g.mode === 'cluster', edition: 'auto',
+    hypervisorLabel: (HYPERVISOR_OPTS.find(h => h.v === g.hypervisor) || {}).l || g.hypervisor || '',
     existHas: false, existEdition: 'standard', existVersion: '2022', existCores: 0, existTopUp: 'auto',
   }));
   licWinId = licWinRows.length;
@@ -3809,7 +3851,7 @@ function licRenderWinRows() {
     return `
     <div class="host-group">
       <div class="host-group-head">
-        <div style="display:flex;align-items:center;gap:8px;min-width:0;"><span class="host-group-tag">Hosts</span><span class="host-group-name">${esc(r.name)}</span></div>
+        <div style="display:flex;align-items:center;gap:8px;min-width:0;"><span class="host-group-tag">Hosts</span><span class="host-group-name">${esc(r.name)}</span>${r.hypervisorLabel ? `<span class="host-group-tag" style="color:var(--text-secondary);border-color:var(--border-subtle);">${esc(r.hypervisorLabel)}</span>` : ''}</div>
         <button class="btn btn-danger btn-sm" type="button" onclick="licRemoveWin(${r.id})">Remove</button>
       </div>
       <div class="host-group-grid">
@@ -4195,7 +4237,7 @@ function raidApplyImport(d) {
   renderSans();
   primaryTopologyChanged();
   if (Array.isArray(d.vmGroups)) {
-    groups = d.vmGroups.map(g => ({...g}));
+    groups = d.vmGroups.map(g => ({ hostGroupId: 0, ...g }));  // v10+; pre-v10 imports default to the primary host group
     gid    = groups.length ? Math.max(...groups.map(g => g.id)) : 0;
     renderGroups();
     if (groups.length) calculate(true, false);
