@@ -1749,12 +1749,13 @@ function primaryTopologyChanged() {
   document.getElementById('hw-cluster-wrap').style.display = clustered ? 'flex' : 'none';
   document.getElementById('hw-ha-wrap').style.display = clustered ? 'flex' : 'none';
   renderTopology();
+  renderGroups(); // primary's cluster name feeds the "Runs On" label for host group id 0
 }
 
 function addHostGroup(mode='standalone') {
   hostGroupId++;
   hostGroups.push({id:hostGroupId,mode,name:mode==='cluster'?`Cluster ${hostGroupId}`:`Standalone Group ${hostGroupId}`,role:mode==='cluster'?'compute':'backup',count:mode==='cluster'?2:1,model:'',sockets:2,cores:16,ghz:2.4,ram:256,storage:10,hypervisor:'vmware',ht:true,haReserve:mode==='cluster',storageMode:mode==='cluster'?'shared':'local'});
-  renderHostGroups(); renderTopology();
+  renderHostGroups(); renderTopology(); renderGroups(); // new group must appear in VM groups' "Runs On" selector
 }
 
 function updateHostGroup(id, field, value) {
@@ -1764,10 +1765,10 @@ function updateHostGroup(id, field, value) {
   else if(['ht','haReserve'].includes(field)) g[field]=!!value;
   else g[field]=value;
   if(field==='mode'&&value!=='cluster')g.haReserve=false;
-  renderHostGroups(); renderTopology();
+  renderHostGroups(); renderTopology(); renderGroups(); // keep "Runs On" labels (e.g. renamed group) in sync
 }
 
-function removeHostGroup(id){hostGroups=hostGroups.filter(x=>x.id!==id);renderHostGroups();renderTopology();}
+function removeHostGroup(id){hostGroups=hostGroups.filter(x=>x.id!==id);renderHostGroups();renderTopology();renderGroups();}
 
 function renderHostGroups() {
   const el=document.getElementById('host-groups'); if(!el)return;

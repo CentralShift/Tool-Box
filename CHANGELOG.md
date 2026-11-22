@@ -11,6 +11,14 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
+## 2026-11-23 — Claude — Fix: new/renamed/removed host groups never refreshed the VM "Runs On" selector
+
+- Confirmed via reproduction: clicking "+ Standalone group" or "+ Cluster" added the group to `hostGroups[]` correctly, but `addHostGroup()`/`updateHostGroup()`/`removeHostGroup()` only called `renderHostGroups()` + `renderTopology()` — never `renderGroups()` — so every VM Workload Group's "Runs On" `<select>` kept showing only "Primary Host Group" until something else happened to trigger a re-render; made it look like additional host groups "fell under" the primary group when really they just weren't offered as assignable targets yet
+- Added `renderGroups()` calls to `addHostGroup`, `updateHostGroup`, `removeHostGroup`, and `primaryTopologyChanged` (the last one keeps the "Runs On" label in sync when the primary's cluster name changes); a VM group assigned to a host group that's later removed gracefully falls back to displaying/computing against the primary (confirmed: orphaned `hostGroupId` doesn't crash anything, `licPullFromEnvironment()` already had the fallback from the previous fix)
+- Verified entirely via real clicks/selects in the browser (add host group → option appears instantly in "Runs On"; rename → label updates instantly; assign via dropdown → data updates; remove the assigned group → dropdown falls back to Primary and licensing re-pull reroutes correctly); brace balance 1614/1614, no export errors
+
+---
+
 ## 2026-11-23 — Claude — Fix: host groups couldn't have a different hypervisor; Windows licensing billed the wrong host group
 
 - Confirmed via reproduction: a VMware primary host (Linux VMs only) + an additional Hyper-V cluster (the actual Windows VMs) — "Pull from Environment" billed all 5 Windows Server VMs to the VMware host and 0 to the Hyper-V cluster that needed them, because `licPullFromEnvironment()` dumped the total Windows VM count onto whichever host group happened to be first in the list, every other group got 0, regardless of where the VMs actually ran
