@@ -11,6 +11,14 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
+## 2026-11-23 — Claude — Add specific Windows Server versions to the VM Workload Group OS list
+
+- `OS_OPTS` only had a single generic "Windows Server" entry — no way to record which version a VM is actually running. Added Windows Server 2025 / 2022 / 2019 / 2016 (2016 flagged "EOL Jan 2027", matching the date already cited in the Licensing Rules card) as distinct selectable options
+- Kept the old `windows-server` / `windows-server-sql` values as "(other / unspecified)" entries rather than removing them — existing saved VM groups (old exports, the pre-populated sample data) still resolve and display correctly with no import/migration needed; no schema version bump required since `os` was already a free-form string field, just with more valid values now
+- Verified via real dropdown selection in-browser: version-specific values still count correctly as Windows Server VMs in `licPullFromEnvironment()` (per-host attribution unaffected), render with the correct icon/label in the VM Table, and round-trip through TXT/XLSX export without errors; brace balance 1618/1618
+
+---
+
 ## 2026-11-23 — Claude — Fix: new/renamed/removed host groups never refreshed the VM "Runs On" selector
 
 - Confirmed via reproduction: clicking "+ Standalone group" or "+ Cluster" added the group to `hostGroups[]` correctly, but `addHostGroup()`/`updateHostGroup()`/`removeHostGroup()` only called `renderHostGroups()` + `renderTopology()` — never `renderGroups()` — so every VM Workload Group's "Runs On" `<select>` kept showing only "Primary Host Group" until something else happened to trigger a re-render; made it look like additional host groups "fell under" the primary group when really they just weren't offered as assignable targets yet

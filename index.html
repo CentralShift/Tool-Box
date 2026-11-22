@@ -1692,8 +1692,12 @@ body{background:var(--bg-base);}
 <script>
 // ── Data ──────────────────────────────────────────────────────────────────────
 const OS_OPTS = [
-  {v:'windows-server',     l:'Windows Server',          win:true,  sql:false},
-  {v:'windows-server-sql', l:'Windows Server + SQL',    win:true,  sql:true},
+  {v:'windows-server-2025', l:'Windows Server 2025',                 win:true,  sql:false},
+  {v:'windows-server-2022', l:'Windows Server 2022',                 win:true,  sql:false},
+  {v:'windows-server-2019', l:'Windows Server 2019',                 win:true,  sql:false},
+  {v:'windows-server-2016', l:'Windows Server 2016 (EOL Jan 2027)',  win:true,  sql:false},
+  {v:'windows-server',      l:'Windows Server (other / unspecified)',win:true,  sql:false},
+  {v:'windows-server-sql',  l:'Windows Server + SQL (unspecified version)', win:true, sql:true},
   {v:'windows-10-11',      l:'Windows 10 / 11',         win:true,  sql:false},
   {v:'ubuntu',             l:'Ubuntu Linux',             win:false, sql:false},
   {v:'rhel',               l:'RHEL / CentOS',            win:false, sql:false},
