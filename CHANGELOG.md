@@ -11,6 +11,15 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
+## 2026-11-23 — Claude — Add License Inventory: a flat, holistic licensing ledger independent of host assignment
+
+- New card (first in the Licensing tab): a flat spreadsheet-style table (`licInventory[]`) for logging every license already owned — Program, SKU, License, Type, Cores/Unit, Qty, computed Total, Purchase Date, SA/Expiry End — with no per-host assignment required, since that information isn't always known up front. Sits alongside (not replacing) the existing per-host-group "Already have licensing" gap analysis, for when the host breakdown IS known
+- 12 `LIC_INV_TYPES`: Windows Server Standard/Datacenter (per-core, cores×qty), Windows/RDS User/Device CALs, SQL Standard/Enterprise (per-core), SQL Server License + SQL User/Device CAL (Server+CAL model), Other — core-based types sum cores×qty, everything else sums qty as a plain count
+- New `computeLicHolistic()`: reconciles owned totals against environment-wide demand already computed elsewhere — Windows Server cores summed by each row's own chosen edition (not forced to one edition), Windows/RDS CALs from the existing CAL calculator, SQL core-packs and SQL Server License count (one per SQL VM instance) from the existing SQL calculator; SQL User/Device CALs are tracked as owned-only since the tool has no SQL CAL demand model to compare against (no Users/Devices input exists for SQL yet)
+- Verified against the user's own license spreadsheet as a reproduction case (2×WS2022 Standard 16-core + 3×WS2025 Standard 16-core correctly sum to 80 cores total, matching their "Total Licensed Cores" figure exactly) — confirmed add/edit/remove via real clicks, live holistic status updates (short/exact/surplus), TXT/XLSX export, and full round-trip export→import; schema v10→v11 (`lic.inventory`), backward compatible (v10 import leaves inventory empty, no errors); brace balance 1697/1697
+
+---
+
 ## 2026-11-23 — Claude — Add Windows Server 2025 to the Licensing tab's "Existing Version" list
 
 - `LIC_EXIST_VERSIONS` stopped at 2022 — no way to record existing licensing that's already on 2025 (e.g. a host grew cores after already being licensed as 2025)

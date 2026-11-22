@@ -155,6 +155,9 @@ body{font-family:var(--font-ui);background:var(--bg-base);color:var(--text-prima
 .vm-table tr:last-child td{border-bottom:none;}
 .vm-table tr:nth-child(even) td{background:rgba(255,255,255,0.015);}
 .vm-table td strong{color:var(--text-primary);}
+.lic-inv-table th,.lic-inv-table td{padding:6px 8px;white-space:nowrap;}
+.lic-inv-table input,.lic-inv-table select{width:100%;min-width:64px;padding:5px 6px;font-size:11px;}
+.lic-inv-table td.r{white-space:nowrap;}
 
 /* Rec cards */
 .rec-card{border-radius:var(--radius-lg);overflow:hidden;border:1px solid;background:var(--bg-card);}
@@ -1432,6 +1435,29 @@ body{background:var(--bg-base);}
 <div class="main">
   <div class="left-col">
 
+    <!-- License Inventory -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-wrap">
+          <div class="card-icon ci-amber">🗃️</div>
+          <div>
+            <div class="card-title">License Inventory</div>
+            <div class="card-desc">Log everything already owned — no host assignment needed; totals below compare against what the calculators require</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body" style="padding-bottom:0;">
+        <div style="overflow-x:auto;">
+          <table class="vm-table lic-inv-table" id="lic-inv-table"></table>
+        </div>
+      </div>
+      <div class="add-vm-foot">
+        <button class="btn btn-secondary" onclick="licAddInvRow()">＋ Add license</button>
+        <span style="font-size:12px;color:var(--text-muted);">One row per license SKU/pack you own</span>
+      </div>
+      <div style="border-top:1px solid var(--border-subtle);padding:18px 24px;" id="lic-inv-summary"></div>
+    </div>
+
     <!-- Windows Server 2025 Licensing -->
     <div class="card">
       <div class="card-header">
@@ -1747,6 +1773,26 @@ let licPrices  = { ...LIC_DEFAULT_PRICES };
 let licWinRows = [], licWinId = 0;
 let licSqlRows = [], licSqlId = 0;
 let licCals = { users: 20, devices: 12, mode: 'auto', rdsUsers: 0, rdsDevices: 0, rdsMode: 'auto' };
+
+// License Inventory — a flat ledger of licenses already owned, independent of which host they're
+// assigned to ("holistic" ownership vs the per-host-group gap analysis above, for when the host
+// breakdown isn't known yet). `coreBased` types sum cores×qty; everything else sums qty (a plain count).
+const LIC_INV_TYPES = [
+  {v:'ws-std-core',    l:'Windows Server Standard (per-core)',    coreBased:true,  defCores:16},
+  {v:'ws-dc-core',     l:'Windows Server Datacenter (per-core)',  coreBased:true,  defCores:16},
+  {v:'ws-user-cal',    l:'Windows Server — User CAL',              coreBased:false},
+  {v:'ws-device-cal',  l:'Windows Server — Device CAL',            coreBased:false},
+  {v:'rds-user-cal',   l:'RDS — User CAL',                         coreBased:false},
+  {v:'rds-device-cal', l:'RDS — Device CAL',                       coreBased:false},
+  {v:'sql-std-core',   l:'SQL Server Standard (per-core)',         coreBased:true,  defCores:2},
+  {v:'sql-ent-core',   l:'SQL Server Enterprise (per-core)',       coreBased:true,  defCores:2},
+  {v:'sql-server-lic', l:'SQL Server — Server License',            coreBased:false},
+  {v:'sql-user-cal',   l:'SQL Server — User CAL',                  coreBased:false},
+  {v:'sql-device-cal', l:'SQL Server — Device CAL',                coreBased:false},
+  {v:'other',          l:'Other / Unlisted',                       coreBased:false},
+];
+let licInventory = [], licInvId = 0;
+const LIC_INV_COLS = ['Program', 'SKU', 'License', 'Type', 'Cores/Unit', 'Qty', 'Total', 'Purchase Date', 'SA / Expiry End', ''];
 
 function primaryTopologyChanged() {
   const clustered = document.getElementById('hw-deployment').value === 'cluster';
@@ -3477,11 +3523,12 @@ function getExportText() {
     L,
   ].filter(l => l !== null).join('\n');
 
-  // Machine-readable block — v10 adds vmGroups[].hostGroupId (which host group a VM group runs on,
-  // for correct per-host Windows licensing) + hostGroups[].hypervisor is now user-editable;
-  // v9 (existing-licensing gap), v8 (CALs), v7 (Licensing), v6 (Proposed Build Validator) and v5 fields unchanged for back-compat
+  // Machine-readable block — v11 adds lic.inventory (the flat License Inventory ledger, independent
+  // of per-host assignment); v10 (vmGroups[].hostGroupId + editable hostGroups[].hypervisor), v9
+  // (existing-licensing gap), v8 (CALs), v7 (Licensing), v6 (Proposed Build Validator) and v5 fields
+  // unchanged for back-compat
   const data = {
-    v: 10,
+    v: 11,
     vmHw: {
       name:       document.getElementById('hw-name').value,
       sockets:    hwSockN,
@@ -3533,6 +3580,7 @@ function getExportText() {
       win: licWinRows.map(r => ({ ...r })),
       sql: licSqlRows.map(r => ({ ...r })),
       cals: { ...licCals },
+      inventory: licInventory.map(r => ({ ...r })),
     },
   };
 
@@ -3744,7 +3792,74 @@ function computeLicensing() {
   return { win, sql, cal, shop, winCost, sqlCost, calCost: cal.cost, total: winCost + sqlCost + cal.cost };
 }
 
+// Sum the License Inventory by type (core-based types sum cores×qty; everything else sums qty as a plain count).
+function computeLicInventoryTotals() {
+  const owned = {};
+  LIC_INV_TYPES.forEach(t => owned[t.v] = 0);
+  licInventory.forEach(r => {
+    const t = LIC_INV_TYPES.find(x => x.v === r.type);
+    if (!t) return;
+    const qty = Math.max(0, r.qty || 0);
+    owned[r.type] += t.coreBased ? (Math.max(0, r.cores || 0) * qty) : qty;
+  });
+  return owned;
+}
+
+// Holistic owned-vs-required — environment-wide totals, independent of which host owns which license.
+// Required Windows Server cores are summed by each row's own chosen edition (same logic as licWinCompute),
+// not forced into one edition, since different host groups can legitimately need different editions.
+function computeLicHolistic() {
+  const owned = computeLicInventoryTotals();
+  let reqStd = 0, reqDc = 0;
+  licWinRows.forEach(r => {
+    const c = licWinCompute(r);
+    if (c.chosen === 'standard') reqStd += c.stdCores * c.hosts; else reqDc += c.dcCores * c.hosts;
+  });
+  const cal = licCalCompute();
+  const reqWsUser    = (cal.win.chosen && cal.win.chosen.kind === 'user')   ? cal.win.chosen.n : 0;
+  const reqWsDevice  = (cal.win.chosen && cal.win.chosen.kind === 'device') ? cal.win.chosen.n : 0;
+  const reqRdsUser   = (cal.rds.chosen && cal.rds.chosen.kind === 'user')   ? cal.rds.chosen.n : 0;
+  const reqRdsDevice = (cal.rds.chosen && cal.rds.chosen.kind === 'device')? cal.rds.chosen.n : 0;
+  let reqSqlStd = 0, reqSqlEnt = 0, reqSqlServers = 0;
+  licSqlRows.forEach(r => {
+    const c = licSqlCompute(r);
+    if (r.edition === 'enterprise') reqSqlEnt += c.packs; else reqSqlStd += c.packs;
+    reqSqlServers += c.count; // one server license per SQL instance under the Server+CAL model
+  });
+  const row = (label, ownedVal, reqVal, hasDemand) => {
+    const gap = hasDemand ? ownedVal - reqVal : null;
+    return { label, owned: ownedVal, required: hasDemand ? reqVal : null,
+             gap, status: !hasDemand ? null : (gap >= 0 ? 'sufficient' : 'short') };
+  };
+  return [
+    row('Windows Server Standard (cores)',    owned['ws-std-core'],    reqStd,       true),
+    row('Windows Server Datacenter (cores)',  owned['ws-dc-core'],     reqDc,        true),
+    row('Windows Server — User CAL',          owned['ws-user-cal'],   reqWsUser,     true),
+    row('Windows Server — Device CAL',        owned['ws-device-cal'],reqWsDevice,    true),
+    row('RDS — User CAL',                     owned['rds-user-cal'], reqRdsUser,     true),
+    row('RDS — Device CAL',                   owned['rds-device-cal'],reqRdsDevice,  true),
+    row('SQL Server Standard (core packs)',   owned['sql-std-core'],  reqSqlStd,     true),
+    row('SQL Server Enterprise (core packs)', owned['sql-ent-core'],  reqSqlEnt,     true),
+    row('SQL Server — Server License',        owned['sql-server-lic'],reqSqlServers, true),
+    row('SQL Server — User CAL',              owned['sql-user-cal'],  0,             false),
+    row('SQL Server — Device CAL',            owned['sql-device-cal'],0,             false),
+  ];
+}
+
 // ── Licensing: row management ──
+function licAddInvRow() {
+  licInvId++;
+  licInventory.push({ id: licInvId, program: '', sku: '', license: 'Windows Server Standard', type: 'ws-std-core', cores: 16, qty: 1, purchaseDate: '', saEnd: '' });
+  licRenderAll();
+}
+function licUpdateInv(id, field, val) {
+  const r = licInventory.find(x => x.id === id); if (!r) return;
+  if (field === 'cores' || field === 'qty') r[field] = Math.max(0, parseFloat(val) || 0);
+  else r[field] = val;
+  licRenderAll();
+}
+function licRemoveInv(id) { licInventory = licInventory.filter(x => x.id !== id); licRenderAll(); }
+
 function licAddWinRow() {
   licWinId++;
   licWinRows.push({ id: licWinId, name: 'Host group ' + licWinId, hosts: 2, sockets: 2, cores: 12, vms: 4, mobility: true, edition: 'auto',
@@ -4041,7 +4156,53 @@ function licRenderSummaries() {
   }
 }
 
-function licRenderAll() { licRenderWinRows(); licRenderSqlRows(); licRenderCals(); licRenderSummaries(); }
+function licRenderInventory() {
+  const el = document.getElementById('lic-inv-table'); if (!el) return;
+  const head = `<thead><tr>${LIC_INV_COLS.map(c => `<th${c ? '' : ' style="width:1%;"'}>${c}</th>`).join('')}</tr></thead>`;
+  let body;
+  if (!licInventory.length) {
+    body = `<tbody><tr><td colspan="${LIC_INV_COLS.length}" style="text-align:center;color:var(--text-muted);padding:18px;">No licenses logged yet — click "+ Add license" below.</td></tr></tbody>`;
+  } else {
+    body = '<tbody>' + licInventory.map(r => {
+      const t = LIC_INV_TYPES.find(x => x.v === r.type) || LIC_INV_TYPES[0];
+      const total = t.coreBased ? (Math.max(0, r.cores || 0) * Math.max(0, r.qty || 0)) : '—';
+      return `<tr>
+        <td><input class="fi" value="${esc(r.program || '')}" onchange="licUpdateInv(${r.id},'program',this.value)"></td>
+        <td><input class="fi" value="${esc(r.sku || '')}" onchange="licUpdateInv(${r.id},'sku',this.value)"></td>
+        <td><input class="fi" style="min-width:170px;" value="${esc(r.license || '')}" onchange="licUpdateInv(${r.id},'license',this.value)"></td>
+        <td><select class="fs" onchange="licUpdateInv(${r.id},'type',this.value)">${LIC_INV_TYPES.map(o => `<option value="${o.v}"${r.type === o.v ? ' selected' : ''}>${o.l}</option>`).join('')}</select></td>
+        <td>${t.coreBased ? `<input type="number" class="fi" min="0" value="${r.cores}" onchange="licUpdateInv(${r.id},'cores',this.value)">` : '<span style="color:var(--text-muted);">—</span>'}</td>
+        <td><input type="number" class="fi" min="0" value="${r.qty}" onchange="licUpdateInv(${r.id},'qty',this.value)"></td>
+        <td class="mono r">${total}</td>
+        <td><input class="fi" placeholder="e.g. 3/30/2026" value="${esc(r.purchaseDate || '')}" onchange="licUpdateInv(${r.id},'purchaseDate',this.value)"></td>
+        <td><input class="fi" placeholder="e.g. 3/30/2027" value="${esc(r.saEnd || '')}" onchange="licUpdateInv(${r.id},'saEnd',this.value)"></td>
+        <td><button class="btn btn-danger btn-sm" type="button" onclick="licRemoveInv(${r.id})">✕</button></td>
+      </tr>`;
+    }).join('') + '</tbody>';
+  }
+  el.innerHTML = head + body;
+  licRenderHolistic();
+}
+
+function licRenderHolistic() {
+  const el = document.getElementById('lic-inv-summary'); if (!el) return;
+  const rows = computeLicHolistic().filter(r => r.owned > 0 || (r.required || 0) > 0);
+  if (!rows.length) {
+    el.innerHTML = '<span style="font-size:12px;color:var(--text-muted);">Add licenses above, and host groups / SQL VMs below, to see holistic owned-vs-required totals.</span>';
+    return;
+  }
+  el.innerHTML =
+    '<div class="lic-result-name" style="margin-bottom:8px;">Holistic Owned vs. Required</div>' +
+    rows.map(r => {
+      const pillCls  = r.status === null ? 'warn' : (r.status === 'sufficient' ? 'good' : 'bad');
+      const pillTxt  = r.status === null ? 'owned only' : (r.status === 'sufficient' ? (r.gap > 0 ? `+${r.gap} spare` : 'exact') : `short ${-r.gap}`);
+      const reqTxt   = r.required !== null ? ` vs required ${r.required}` : '';
+      return `<div class="lic-opt"><span class="lic-opt-lbl">${r.label}</span><span class="lic-opt-packs">Owned ${r.owned}${reqTxt}</span><span class="lic-opt-cost"><span class="lic-pill ${pillCls}">${pillTxt}</span></span></div>`;
+    }).join('') +
+    '<div class="lic-note">Owned totals sum across ALL logged licenses regardless of version — once a core is licensed you can run any supported version, so 2022 and 2025 Standard cores count together. SQL User/Device CALs are tracked but have no demand figure yet (the tool doesn\'t model SQL Server+CAL requirements).</div>';
+}
+
+function licRenderAll() { licRenderWinRows(); licRenderSqlRows(); licRenderCals(); licRenderInventory(); licRenderSummaries(); }
 
 // Licensing lines for the TXT/PDF export — `row` is getExportText's label/value formatter.
 function licExportSection(row, D) {
@@ -4084,9 +4245,27 @@ function licExportSection(row, D) {
     row('    Windows CALs:', calPairLine(lic.cal.win, false)),
     row('    RDS CALs:',     calPairLine(lic.cal.rds, true)),
   ];
+  const invLines = licInventory.length ? licInventory.map(r => {
+    const t = LIC_INV_TYPES.find(x => x.v === r.type) || LIC_INV_TYPES[0];
+    const total = t.coreBased ? (Math.max(0, r.cores || 0) * Math.max(0, r.qty || 0)) : null;
+    return row('    ' + (r.license || t.l) + ':', r.qty + ' × ' + t.l + (total !== null ? '  (' + total + ' cores total)' : '')
+      + (r.purchaseDate ? '  purchased ' + r.purchaseDate : '') + (r.saEnd ? '  SA/expiry ' + r.saEnd : ''));
+  }) : ['  (no licenses logged)'];
+  const holisticRows = computeLicHolistic().filter(r => r.owned > 0 || (r.required || 0) > 0);
+  const holisticLines = holisticRows.length ? holisticRows.map(r =>
+    row('    ' + r.label + ':', 'owned ' + r.owned + (r.required !== null
+      ? ' vs required ' + r.required + '  [' + (r.status === 'sufficient' ? (r.gap > 0 ? 'surplus ' + r.gap : 'exact') : 'SHORT ' + (-r.gap)) + ']'
+      : '  (no demand modeled)'))
+  ) : ['  (add licenses and/or host groups / SQL VMs to compare)'];
   return [
     '  LICENSING',
     D,
+    '  LICENSE INVENTORY  (owned, independent of host assignment)',
+    ...invLines,
+    '',
+    '  HOLISTIC OWNED VS REQUIRED',
+    ...holisticLines,
+    '',
     '  WINDOWS SERVER 2025',
     ...winLines,
     '',
@@ -4280,6 +4459,10 @@ function raidApplyImport(d) {
       licSqlId = licSqlRows.length ? Math.max(...licSqlRows.map(r => r.id)) : 0;
     }
     if (d.lic.cals && typeof d.lic.cals === 'object') licCals = { ...licCals, ...d.lic.cals };  // v8+
+    if (Array.isArray(d.lic.inventory)) {  // v11+; absent in v10/older imports — starts empty
+      licInventory = d.lic.inventory.map((r, i) => ({ ...r, id: Number.isFinite(Number(r.id)) ? Number(r.id) : i + 1 }));
+      licInvId = licInventory.length ? Math.max(...licInventory.map(r => r.id)) : 0;
+    }
     licSyncPriceInputs();
     licSyncCalInputs();
   }
@@ -4845,6 +5028,22 @@ function exportXlsx() {
     const lic = computeLicensing();
     const rows = [
       ['MSP Toolbox — Licensing', '', ts],
+      blank(),
+      ['LICENSE INVENTORY  (owned, independent of host assignment)'],
+      ['Program', 'SKU', 'License', 'Type', 'Cores/Unit', 'Qty', 'Total Cores', 'Purchase Date', 'SA / Expiry End'],
+      ...(licInventory.length
+        ? licInventory.map(r => {
+            const t = LIC_INV_TYPES.find(x => x.v === r.type) || LIC_INV_TYPES[0];
+            const total = t.coreBased ? (Math.max(0, r.cores || 0) * Math.max(0, r.qty || 0)) : 0;
+            return [r.program || '', r.sku || '', r.license || '', t.l, t.coreBased ? r.cores : '', r.qty, total, r.purchaseDate || '', r.saEnd || ''];
+          })
+        : [['(no licenses logged)']]),
+      blank(),
+      ['HOLISTIC OWNED VS REQUIRED  (environment-wide, independent of host assignment)'],
+      ['Resource', 'Owned', 'Required', 'Status'],
+      ...(computeLicHolistic().filter(r => r.owned > 0 || (r.required || 0) > 0).map(r =>
+        [r.label, r.owned, r.required !== null ? r.required : '(not modeled)',
+         r.status === null ? 'owned only' : (r.status === 'sufficient' ? (r.gap > 0 ? 'Surplus ' + r.gap : 'Exact') : 'Short ' + (-r.gap))])),
       blank(),
       ['WINDOWS SERVER 2025  (per-core, per host)'],
       ['Group', 'Hosts', 'Cores to License / Host', 'Windows VMs', 'VMs / Host', 'Standard Best Mix', 'Standard Cost', 'Datacenter Best Mix', 'Datacenter Cost', 'Selected', 'Selected Cost'],
