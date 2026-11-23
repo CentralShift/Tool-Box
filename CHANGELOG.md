@@ -11,6 +11,16 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
+## 2026-11-23 — Claude — Fix mobile layout: horizontal page overflow, hidden Import button, no scroll-tab affordance
+
+- Root cause of a real bug: `.left-col`/`.right-col` are flex containers and `.card` their flex items, so with no `min-width:0` a wide table (License Inventory, VM Group Breakdown, VLAN Planner) forced its card — and the whole column — to grow past the viewport instead of scrolling internally, blowing out every tab's layout on phone widths (confirmed body overflow 375px → up to 746px). Added `min-width:0` to `.left-col`/`.right-col`/`.card`, plus `max-width:100%` on the three table scroll-wrapper `<div>`s so `overflow-x:auto` on them actually activates instead of being moot
+- A `@media(max-width:760px)` rule meant to hide one header action on narrow screens used `.header-actions .btn-sm:nth-of-type(2)` — `nth-of-type` counts all `<button>` siblings including the non-`.btn-sm` theme toggle, so it was hiding **Import** (position 2) instead of the intended **Copy** button. Switched to targeting `#raid-copy-btn` directly
+- Tab bar scrolls horizontally on narrow screens with no visual hint more tabs exist off-screen — added a CSS mask fade on the trailing edge
+- Added `text-size-adjust:100%` to stop mobile browsers auto-boosting rendered text size once the overflow fix removed the condition that was suppressing it
+- Verified at 375px width across all five tabs: `document.body.scrollWidth` now `375` everywhere (previously up to 746 on Licensing); Import visible, Copy hidden, tab fade visible; desktop layout re-checked unaffected
+
+---
+
 ## 2026-11-23 — Claude — Reduce clutter: collapse irrelevant from-scratch costs, group pricing fields, de-dupe EOL notes
 
 - Biggest offender: once "Already have licensing" is on for a Windows Server row, the "Requirement" block still showed all 4 from-scratch cost lines (Standard/Datacenter × best-mix/2-core-only) plus a note saying to ignore them — now collapsed into a single `<details>` summary ("from-scratch cost — not used, see Existing Licensing below") that expands on click; the always-relevant Existing Licensing gap block is what's visible by default. No change when existing licensing isn't in use
