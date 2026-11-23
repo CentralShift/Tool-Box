@@ -519,6 +519,8 @@ body{background:var(--bg-base);}
 
 /* ── Licensing tab ── */
 .lic-price-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.lic-price-group-lbl{grid-column:1/-1;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-top:8px;padding-top:8px;border-top:1px solid var(--border-subtle);}
+.lic-price-group-lbl:first-child{margin-top:0;padding-top:0;border-top:none;}
 .lic-result{border:1px solid var(--border-default);background:var(--bg-elevated);border-radius:3px;padding:11px 13px;margin-top:10px;}
 .lic-result-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
 .lic-result-name{font-size:12px;font-weight:700;color:var(--text-primary);}
@@ -1574,20 +1576,24 @@ body{background:var(--bg-base);}
       <div class="card-body" style="padding:16px 20px;">
         <div class="lic-price-grid">
           <div class="fg"><label class="fl">Currency Label</label><input class="fi" id="lic-p-cur" value="USD" maxlength="6" oninput="licPriceUpdate('cur',this.value)"></div>
+          <div class="lic-price-group-lbl">Windows Server 2025 — from scratch</div>
           <div class="fg"><label class="fl">WS Standard — 16-core</label><input type="number" class="fi" id="lic-p-wsStd16" min="0" step="1" oninput="licPriceUpdate('wsStd16',this.value)"></div>
           <div class="fg"><label class="fl">WS Standard — 2-core pack</label><input type="number" class="fi" id="lic-p-wsStd2" min="0" step="1" oninput="licPriceUpdate('wsStd2',this.value)"></div>
           <div class="fg"><label class="fl">WS Datacenter — 16-core</label><input type="number" class="fi" id="lic-p-wsDc16" min="0" step="1" oninput="licPriceUpdate('wsDc16',this.value)"></div>
           <div class="fg"><label class="fl">WS Datacenter — 2-core pack</label><input type="number" class="fi" id="lic-p-wsDc2" min="0" step="1" oninput="licPriceUpdate('wsDc2',this.value)"></div>
-          <div class="fg"><label class="fl">SQL Standard — 2-core pack</label><input type="number" class="fi" id="lic-p-sqlStd2" min="0" step="1" oninput="licPriceUpdate('sqlStd2',this.value)"></div>
-          <div class="fg"><label class="fl">SQL Enterprise — 2-core pack</label><input type="number" class="fi" id="lic-p-sqlEnt2" min="0" step="1" oninput="licPriceUpdate('sqlEnt2',this.value)"></div>
-          <div class="fg"><label class="fl">Windows Server — User CAL</label><input type="number" class="fi" id="lic-p-wsUserCal" min="0" step="1" oninput="licPriceUpdate('wsUserCal',this.value)"></div>
-          <div class="fg"><label class="fl">Windows Server — Device CAL</label><input type="number" class="fi" id="lic-p-wsDevCal" min="0" step="1" oninput="licPriceUpdate('wsDevCal',this.value)"></div>
-          <div class="fg"><label class="fl">RDS — User CAL</label><input type="number" class="fi" id="lic-p-rdsUserCal" min="0" step="1" oninput="licPriceUpdate('rdsUserCal',this.value)"></div>
-          <div class="fg"><label class="fl">RDS — Device CAL</label><input type="number" class="fi" id="lic-p-rdsDevCal" min="0" step="1" oninput="licPriceUpdate('rdsDevCal',this.value)"></div>
+          <div class="lic-price-group-lbl">Windows Server — existing/legacy top-up</div>
           <div class="fg"><label class="fl">Existing/Legacy Std — 16-core</label><input type="number" class="fi" id="lic-p-existStd16" min="0" step="1" oninput="licPriceUpdate('existStd16',this.value)"></div>
           <div class="fg"><label class="fl">Existing/Legacy Std — 2-core pack</label><input type="number" class="fi" id="lic-p-existStd2" min="0" step="1" oninput="licPriceUpdate('existStd2',this.value)"></div>
           <div class="fg"><label class="fl">Existing/Legacy DC — 16-core</label><input type="number" class="fi" id="lic-p-existDc16" min="0" step="1" oninput="licPriceUpdate('existDc16',this.value)"></div>
           <div class="fg"><label class="fl">Existing/Legacy DC — 2-core pack</label><input type="number" class="fi" id="lic-p-existDc2" min="0" step="1" oninput="licPriceUpdate('existDc2',this.value)"></div>
+          <div class="lic-price-group-lbl">SQL Server</div>
+          <div class="fg"><label class="fl">SQL Standard — 2-core pack</label><input type="number" class="fi" id="lic-p-sqlStd2" min="0" step="1" oninput="licPriceUpdate('sqlStd2',this.value)"></div>
+          <div class="fg"><label class="fl">SQL Enterprise — 2-core pack</label><input type="number" class="fi" id="lic-p-sqlEnt2" min="0" step="1" oninput="licPriceUpdate('sqlEnt2',this.value)"></div>
+          <div class="lic-price-group-lbl">Client Access Licenses</div>
+          <div class="fg"><label class="fl">Windows Server — User CAL</label><input type="number" class="fi" id="lic-p-wsUserCal" min="0" step="1" oninput="licPriceUpdate('wsUserCal',this.value)"></div>
+          <div class="fg"><label class="fl">Windows Server — Device CAL</label><input type="number" class="fi" id="lic-p-wsDevCal" min="0" step="1" oninput="licPriceUpdate('wsDevCal',this.value)"></div>
+          <div class="fg"><label class="fl">RDS — User CAL</label><input type="number" class="fi" id="lic-p-rdsUserCal" min="0" step="1" oninput="licPriceUpdate('rdsUserCal',this.value)"></div>
+          <div class="fg"><label class="fl">RDS — Device CAL</label><input type="number" class="fi" id="lic-p-rdsDevCal" min="0" step="1" oninput="licPriceUpdate('rdsDevCal',this.value)"></div>
         </div>
         <div style="font-size:11px;color:var(--text-muted);line-height:1.6;padding:8px 10px;margin-top:12px;background:rgba(255,255,255,0.025);border-radius:var(--radius-sm);">
           ℹ️ Replace with your reseller / CSP pricing (e.g. AUD ex-GST). "Existing/Legacy" defaults to approx. Windows Server 2022 list price — edit to match whatever version a client is topping up. All calculations update live.
@@ -4049,6 +4055,20 @@ function licRenderWinRows() {
         </select></div>`}` : ''}
       </div>
       <div class="lic-result">
+        ${r.existHas ? `
+        <details>
+          <summary style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+            <span class="lic-result-name">Requirement — ${c.coresPerHost} core licenses / host${c.hosts > 1 ? ' × ' + c.hosts + ' hosts' : ''} · ${c.vmsPerHost} VM${c.vmsPerHost === 1 ? '' : 's'}/host</span>
+            <span class="lic-pill warn">from-scratch cost — not used, see Existing Licensing below</span>
+          </summary>
+          <div style="margin-top:10px;">
+            <div class="lic-opt"><span class="lic-opt-lbl">Standard — best mix${pill('standard')}</span><span class="lic-opt-packs">${c.stdCores * c.hosts} cores → ${licMixLbl(c.stdBest)}</span><span class="lic-opt-cost">${licMoney(c.stdBest.cost)}</span></div>
+            <div class="lic-opt"><span class="lic-opt-lbl">Standard — 2-core only</span><span class="lic-opt-packs">${licMixLbl(c.std2)}</span><span class="lic-opt-cost">${licMoney(c.std2.cost)}</span></div>
+            <div class="lic-opt"><span class="lic-opt-lbl">Datacenter — best mix${pill('datacenter')}</span><span class="lic-opt-packs">${c.dcCores * c.hosts} cores → ${licMixLbl(c.dcBest)}</span><span class="lic-opt-cost">${licMoney(c.dcBest.cost)}</span></div>
+            <div class="lic-opt"><span class="lic-opt-lbl">Datacenter — 2-core only</span><span class="lic-opt-packs">${licMixLbl(c.dc2)}</span><span class="lic-opt-cost">${licMoney(c.dc2.cost)}</span></div>
+            <div class="lic-note">Standard needs ${c.stdSets} full core-set${c.stdSets === 1 ? '' : 's'} per host (2 VMs per set).${c.breakEven ? ' Datacenter becomes the better buy at ~' + c.breakEven + ' VMs per host.' : ''} With existing licensing entered, only the shortfall below is a real purchase — these from-scratch figures are for comparison only.</div>
+          </div>
+        </details>` : `
         <div class="lic-result-head">
           <span class="lic-result-name">Requirement — ${c.coresPerHost} core licenses / host${c.hosts > 1 ? ' × ' + c.hosts + ' hosts' : ''} · ${c.vmsPerHost} VM${c.vmsPerHost === 1 ? '' : 's'}/host</span>
           <span class="lic-pill ${c.chosen === 'datacenter' ? 'warn' : 'good'}">${c.chosen === 'standard' ? 'Standard' : 'Datacenter'} selected — ${licMoney(c.chosenCost)}</span>
@@ -4057,7 +4077,8 @@ function licRenderWinRows() {
         <div class="lic-opt"><span class="lic-opt-lbl">Standard — 2-core only</span><span class="lic-opt-packs">${licMixLbl(c.std2)}</span><span class="lic-opt-cost">${licMoney(c.std2.cost)}</span></div>
         <div class="lic-opt"><span class="lic-opt-lbl">Datacenter — best mix${pill('datacenter')}</span><span class="lic-opt-packs">${c.dcCores * c.hosts} cores → ${licMixLbl(c.dcBest)}</span><span class="lic-opt-cost">${licMoney(c.dcBest.cost)}</span></div>
         <div class="lic-opt"><span class="lic-opt-lbl">Datacenter — 2-core only</span><span class="lic-opt-packs">${licMixLbl(c.dc2)}</span><span class="lic-opt-cost">${licMoney(c.dc2.cost)}</span></div>
-        <div class="lic-note">Standard needs ${c.stdSets} full core-set${c.stdSets === 1 ? '' : 's'} per host (2 VMs per set).${c.breakEven ? ' Datacenter becomes the better buy at ~' + c.breakEven + ' VMs per host.' : ''}${r.existHas ? ' With existing licensing entered, only the shortfall below is a real purchase — ignore the from-scratch costs above.' : ''}</div>
+        <div class="lic-note">Standard needs ${c.stdSets} full core-set${c.stdSets === 1 ? '' : 's'} per host (2 VMs per set).${c.breakEven ? ' Datacenter becomes the better buy at ~' + c.breakEven + ' VMs per host.' : ''}</div>
+        `}
       </div>
       ${g ? licGapHtml(r, c, g) : ''}
     </div>`;
@@ -4248,6 +4269,10 @@ function licRenderHolistic() {
   const serverCalNote = hasServerCalRows
     ? '<div class="lic-note">ℹ️ "SQL Server — Server License" and the per-core "SQL Server Standard/Enterprise" rows are ALTERNATIVE licensing models for the same SQL instance, not additive — the SQL Server calculator below prices per-core. The Server License count here is shown for reference only if you\'re actually using Server+CAL instead; it doesn\'t mean you need both.</div>'
     : '';
+  const anyEolRisk = rows.some(r => (r.eolRisk || []).length);
+  const eolExplainerNote = anyEolRisk
+    ? '<div class="lic-note" style="color:#F87171;">⚠ Rows flagged above include an EOL/EOL-soon version — confirm downgrade rights or active Software Assurance before counting those cores toward hosts running a newer version.</div>'
+    : '';
   el.innerHTML =
     '<div class="lic-result-name" style="margin-bottom:8px;">Holistic Owned vs. Required</div>' +
     rows.map(r => {
@@ -4256,13 +4281,14 @@ function licRenderHolistic() {
       const reqTxt   = r.required !== null ? ` vs required ${r.required}` : '';
       const mixEntries = Object.entries(r.versionMix || {}).filter(([, n]) => n > 0);
       const mixTxt = mixEntries.length > 1 ? ` (${mixEntries.map(([v, n]) => `${n}@${v}`).join(', ')})` : '';
-      const eolNote = (r.eolRisk || []).length
-        ? `<div class="lic-note" style="color:#F87171;">⚠ Includes ${r.eolRisk.map(e => `${e.amt} from ${e.version} (${e.status === 'ended' ? 'EOL — ended' : 'EOL'} ${e.date})`).join('; ')} — confirm downgrade rights or active Software Assurance before counting these toward hosts running a newer version.</div>`
+      const eolTag = (r.eolRisk || []).length
+        ? ` <span class="lic-pill bad">⚠ ${r.eolRisk.map(e => `${e.amt}@${e.version}`).join(', ')}</span>`
         : '';
-      return `<div class="lic-opt"><span class="lic-opt-lbl">${r.label}</span><span class="lic-opt-packs">Owned ${r.owned}${mixTxt}${reqTxt}</span><span class="lic-opt-cost"><span class="lic-pill ${pillCls}">${pillTxt}</span></span></div>${eolNote}`;
+      return `<div class="lic-opt"><span class="lic-opt-lbl">${r.label}</span><span class="lic-opt-packs">Owned ${r.owned}${mixTxt}${reqTxt}</span><span class="lic-opt-cost">${eolTag} <span class="lic-pill ${pillCls}">${pillTxt}</span></span></div>`;
     }).join('') +
     dualPoolNote +
     serverCalNote +
+    eolExplainerNote +
     '<div class="lic-note">Owned totals sum across ALL logged licenses regardless of version — once a core is licensed you can run any supported version, so (EOL caveats aside) 2022 and 2025 Standard cores count together. SQL User/Device CALs are tracked but have no demand figure yet (the tool doesn\'t model SQL Server+CAL requirements).</div>';
 }
 

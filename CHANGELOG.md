@@ -11,6 +11,15 @@ file** in this repo. Put the newest entry at the top. Format:
 
 ---
 
+## 2026-11-23 — Claude — Reduce clutter: collapse irrelevant from-scratch costs, group pricing fields, de-dupe EOL notes
+
+- Biggest offender: once "Already have licensing" is on for a Windows Server row, the "Requirement" block still showed all 4 from-scratch cost lines (Standard/Datacenter × best-mix/2-core-only) plus a note saying to ignore them — now collapsed into a single `<details>` summary ("from-scratch cost — not used, see Existing Licensing below") that expands on click; the always-relevant Existing Licensing gap block is what's visible by default. No change when existing licensing isn't in use
+- License Pricing card had 15 ungrouped fields in one flat 2-column grid — added section labels (Windows Server 2025 — from scratch / Windows Server — existing/legacy top-up / SQL Server / Client Access Licenses) so it reads as four small groups instead of one wall of inputs
+- Holistic summary's EOL warning repeated the full "confirm downgrade rights or active SA" explanation once per flagged resource row — now each row just gets a compact inline badge (e.g. "⚠ 32@2016"), with the explanation stated once at the bottom only if any row needs it
+- Verified: `<details>` expands/collapses correctly, price group labels render, TXT/XLSX export unaffected; no logic changes, display-only
+
+---
+
 ## 2026-11-23 — Claude — Drop hardcoded "2022" from the SQL Server calculator's labels
 
 - Per user decision on the flagged finding: relabeled only (kept one set of current pricing, no new version-split feature) — card title "SQL Server 2022 Licensing" → "SQL Server Licensing", reference card title/box, Target Edition dropdown ("SQL 2022 Standard/Enterprise" → "Standard"/"Enterprise"), and TXT/XLSX export section headers all drop the "2022". Accurate now that SQL Server 2025 is current (per the user's own license records) without implying the calculator only prices 2022; brace balance verified, no logic changes
